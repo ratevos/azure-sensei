@@ -1,0 +1,272 @@
+# Delegate Azure access management to others - Azure ABAC
+
+> Source: https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-overview  
+> Microsoft doc last updated: 03/30/2026
+
+
+In [Azure role-based access control (Azure RBAC)](https://learn.microsoft.com/en-us/azure/role-based-access-control/overview), to grant access to Azure resources, you assign Azure roles. For example, if a user needs to create and manage websites in a subscription, you assign the Website Contributor role.
+ 
+Assigning Azure roles to grant access to Azure resources is a common task. As an administrator, you might get several requests to grant access that you want to delegate to someone else. However, you want to make sure the delegate has just the permissions they need to do their job. This article describes a more secure way to delegate role assignment management to other users in your organization.
+
+## Why delegate role assignment management?
+
+Here are some reasons why you might want to delegate role assignment management to others:
+
+- You get several requests to assign roles in your organization.
+- Users are blocked waiting for the role assignment they need.
+- Users within their respective departments, teams, or projects have more knowledge about who needs access.
+- Users have permissions to create Azure resources, but need an additional role assignment to fully use that resource. For example:
+    - Users with permission to create virtual machines can't immediately sign in to the virtual machine without the Virtual Machine Administrator Login or Virtual Machine User Login role. Instead of tracking down an administrator to assign them a login role, it's more efficient if the user can assign the login role to themselves.
+    - A developer has permissions to create an Azure Kubernetes Service (AKS) cluster and an Azure Container Registry (ACR), but needs to assign the AcrPull role to a managed identity so that it can pull images from the ACR. Instead of tracking down an administrator to assign the AcrPull role, it's more efficient if the developer can assign the role themselves.
+    
+## How you currently can delegate role assignment management
+
+The [Owner](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#owner) and [User Access Administrator](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#user-access-administrator) roles are built-in roles that allow users to create or delete role assignments. Members of these roles can decide who can have write, read, and delete permissions for any resource in a subscription. To delegate role assignment management to another user, you can assign the Owner or User Access Administrator role to a user.
+
+The following diagram shows how Alice can delegate role assignment responsibilities to Dara. For specific steps, see [Assign a user as an administrator of an Azure subscription](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-portal-subscription-admin).
+
+1. Alice assigns the User Access Administrator role to Dara.
+1. Dara can now add (or remove) any role assignment for any user, group, or service principal at the same scope.
+
+## What are the issues with the current delegation method?
+
+Here are the primary issues with the current method of delegating role assignment management to others in your organization.
+
+- Delegate has unrestricted access at the role assignment scope. This violates the principle of least privilege, which exposes you to a wider attack surface.
+- Delegate can assign any role to any user within their scope, including themselves.
+- Delegate can assign the Owner or User Access Administrator roles to another user, who can then assign roles to other users.
+
+Instead of assigning the Owner or User Access Administrator roles, a more secure method is to constrain a delegate's ability to create role assignments.
+
+## A more secure method: Delegate role assignment management with conditions
+
+Delegating role assignment management with conditions is a way to restrict the role assignments a user can create or delete. In the preceding example, Alice can allow Dara to create (or delete) some role assignments on her behalf, but not all role assignments. For example, Alice can constrain the roles that Dara can assign, constrain the principals that Dara can assign roles to, and constrain the role assignments Dara can remove. This delegation with conditions is sometimes referred to as *constrained delegation* and is implemented using [Azure attribute-based access control (Azure ABAC) conditions](https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-overview).
+
+This video provides an overview of delegating role assignment management with conditions.
+
+>[!VIDEO https://www.youtube.com/embed/3eDf2thqeO4]
+
+## Why delegate role assignment management with conditions?
+
+Here are some reasons why delegating role assignment management to others with conditions is more secure:
+
+- You can restrict the role assignments the delegate is allowed to create.
+- You can restrict the role assignments the delegate is allowed to delete.
+- You can prevent a delegate from allowing another user to assign roles.
+- You can enforce compliance of your organization's policies of least privilege.
+- You can automate the management of Azure resources without having to grant full permissions to a service account.
+
+## Conditions example
+
+Consider an example where Alice is an administrator with the User Access Administrator role for a subscription. Alice wants to grant Dara the ability to assign specific roles for specific groups and remove specific role assignments. Alice doesn't want Dara to have any other role assignment permissions. The following diagram shows how Alice can delegate role assignment responsibilities to Dara with conditions.
+
+1. Alice assigns the Role Based Access Control Administrator role to Dara. Alice adds conditions so that Dara can only add (or remove) Backup Contributor or Backup Reader role assignments to the Marketing and Sales groups.
+1. Dara can now add (or remove) Backup Contributor or Backup Reader role assignments to the Marketing and Sales groups.
+1. If Dara attempts to assign other roles or assign any roles to different principals (such as a user or managed identity), the role assignment fails.
+1. If Dara attempts to remove other role assignments or remove any role assignments from different principals (such as a user or managed identity), the removal fails.
+
+## Role Based Access Control Administrator role
+
+The [Role Based Access Control Administrator](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#role-based-access-control-administrator) role is a built-in role that has been designed for delegating role assignment management to others. It has fewer permissions than [User Access Administrator](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#user-access-administrator), which follows least privilege best practices. The Role Based Access Control Administrator role has following permissions:
+
+- Create a role assignment at the specified scope
+- Delete a role assignment at the specified scope
+- Read resources of all types, except secrets
+- Create and update a support ticket
+
+## Ways to constrain role assignments
+
+Here are the ways that role assignments can be constrained with conditions. You can also combine these conditions to fit your scenario.
+
+- Constrain the **roles** that can be assigned
+
+    In this example, Dara can only assign (or remove) the Backup Contributor or Backup Reader roles.
+
+    
+
+- Constrain the **roles** and **types of principals** (users, groups, or service principals) that can be assigned roles
+
+    In this example, Dara can only assign (or remove) the Backup Contributor or Backup Reader roles to user or group principal types.
+
+    
+
+- Constrain the **roles** and **specific principals** that can be assigned roles
+
+    In this example, Dara can only assign (or remove) the Backup Contributor or Backup Reader roles to the Marketing and Sales groups.
+
+    
+
+- Specify different conditions for the add and remove **role assignment actions**
+
+    In this example, Dara can only assign the Backup Contributor or Backup Reader roles. Dara can remove any role assignments.
+
+    
+
+## How to delegate role assignment management with conditions
+
+To delegate role assignment management with conditions, you assign roles as you currently do, but you also add a [condition to the role assignment](https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-portal).
+
+1. Determine the permissions the delegate needs
+
+    - What roles can the delegate assign?
+    - What role assignments can the delegate remove?
+    - What types of principals can the delegate assign roles to?
+    - Which principals can the delegate assign roles to?
+    - Can delegate remove any role assignments?
+
+1. Start a new role assignment
+
+1. Select the [Role Based Access Control Administrator](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#role-based-access-control-administrator) role
+
+    You can select any role that includes the `Microsoft.Authorization/roleAssignments/write` action, but Role Based Access Control Administrator has fewer permissions.
+
+1. Select the delegate
+
+    Select the user that you want to delegate role assignment management to.
+
+1. Add a condition
+
+    There are multiple ways that you can add a condition. For example, you can use a condition template in the Azure portal, the advanced condition editor in the Azure portal, Azure PowerShell, Azure CLI, Bicep, or REST API.
+
+    # [Template](#tab/template)
+
+    Choose from a list of condition templates. Select **Configure** to specify the roles, principal types, or principals.
+
+    For more information, see [Delegate Azure role assignment management to others with conditions](https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-portal).
+    
+    
+
+    # [Condition editor](#tab/condition-editor)
+
+    If the condition templates don't work for your scenario or if you want more control, you can use the condition editor.
+
+    For examples, see [Examples to delegate Azure role assignment management with conditions](https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-examples).
+
+    
+
+    # [Azure PowerShell](#tab/azure-powershell)
+
+    [New-AzRoleAssignment](https://learn.microsoft.com/en-us/powershell/module/az.resources/new-azroleassignment)
+
+    ```azurepowershell
+    $roleDefinitionId = "f58310d9-a9f6-439a-9e8d-f62e7b41a168"
+    $principalId = "<principalId>"
+    $scope = "/subscriptions/<subscriptionId>"
+    $condition = "((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})) OR (@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {5e467623-bb1f-42f4-a55d-6e525e11384b, a795c7a0-d4a2-40c1-ae25-d81f01202912} AND @Request[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'User'})) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {5e467623-bb1f-42f4-a55d-6e525e11384b, a795c7a0-d4a2-40c1-ae25-d81f01202912} AND @Resource[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'User'}))"
+    $conditionVersion = "2.0"
+    New-AzRoleAssignment -ObjectId $principalId -Scope $scope -RoleDefinitionId $roleDefinitionId -Condition $condition -ConditionVersion $conditionVersion
+    ```
+    
+    # [Azure CLI](#tab/azure-cli)
+
+    [az role assignment create](https://learn.microsoft.com/en-us/cli/azure/role/assignment#az-role-assignment-create)
+
+    ```azurecli
+    set roleDefinitionId="f58310d9-a9f6-439a-9e8d-f62e7b41a168"
+    set principalId="{principalId}"
+    set principalType="User"
+    set scope="/subscriptions/{subscriptionId}"
+    set condition="((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})) OR (@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {5e467623-bb1f-42f4-a55d-6e525e11384b, a795c7a0-d4a2-40c1-ae25-d81f01202912} AND @Request[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'User'})) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {5e467623-bb1f-42f4-a55d-6e525e11384b, a795c7a0-d4a2-40c1-ae25-d81f01202912} AND @Resource[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'User'}))"
+    set conditionVersion="2.0"
+    az role assignment create --assignee-object-id %principalId% --assignee-principal-type %principalType% --scope %scope% --role %roleDefinitionId% --condition %condition% --condition-version %conditionVersion%
+    ```
+    
+    # [Bicep](#tab/bicep)
+
+    ```Bicep
+    param roleDefinitionResourceId string
+    param principalId string
+    param condition string
+    
+    targetScope = 'subscription'
+    
+    resource roleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+      name: guid(subscription().id, principalId, roleDefinitionResourceId)
+      properties: {
+        roleDefinitionId: roleDefinitionResourceId
+        principalId: principalId
+        principalType: 'User'
+        condition: condition
+        conditionVersion:'2.0'
+      }
+    }
+    ```
+    
+    ```json
+    {
+      "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "roleDefinitionResourceId": {
+          "value": "providers/Microsoft.Authorization/roleDefinitions/f58310d9-a9f6-439a-9e8d-f62e7b41a168"
+        },
+        "principalId": {
+          "value": "{principalId}"
+        },
+        "condition": {
+          "value": "((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})) OR (@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {5e467623-bb1f-42f4-a55d-6e525e11384b, a795c7a0-d4a2-40c1-ae25-d81f01202912} AND @Request[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'User'})) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {5e467623-bb1f-42f4-a55d-6e525e11384b, a795c7a0-d4a2-40c1-ae25-d81f01202912} AND @Resource[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'User'}))"
+        }
+      }
+    }
+    ```
+    
+    # [REST API](#tab/rest)
+    
+    [Role Assignments - Create](https://learn.microsoft.com/en-us/rest/api/authorization/role-assignments/create)
+    
+    ```http
+    PUT https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleAssignments/f58310d9-a9f6-439a-9e8d-f62e7b41a168?api-version=2020-04-01-Preview
+    
+    {
+      "properties": {
+        "roleDefinitionId": "/subscriptions/{subscriptionId}/providers/Microsoft.Authorization/roleDefinitions/f58310d9-a9f6-439a-9e8d-f62e7b41a168",
+        "principalId": "{principalId}",
+        "condition": "((!(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})) OR (@Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {5e467623-bb1f-42f4-a55d-6e525e11384b, a795c7a0-d4a2-40c1-ae25-d81f01202912} AND @Request[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'User'})) AND ((!(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})) OR (@Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {5e467623-bb1f-42f4-a55d-6e525e11384b, a795c7a0-d4a2-40c1-ae25-d81f01202912} AND @Resource[Microsoft.Authorization/roleAssignments:PrincipalType] ForAnyOfAnyValues:StringEqualsIgnoreCase {'User'}))",
+        "conditionVersion": "2.0"
+      }
+    }
+    ```
+
+    ---
+
+1. Assign role with condition to delegate
+
+    Once you have specified your condition, complete the role assignment.
+
+1. Contact the delegate
+
+    Let the delegate know that they can now assign roles with conditions.
+
+## Built-in roles with conditions
+
+The [Key Vault Data Access Administrator](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-data-access-administrator) and [Virtual Machine Data Access Administrator (preview)](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-data-access-administrator-preview) roles already have a built-in condition to constrain role assignments.
+
+The Key Vault Data Access Administrator role enables you to manage access to Key Vault secrets, certificates, and keys. It's exclusively focused on access control without the ability to assign privileged roles such as Owner or User Access Administrator roles. It allows better separation of duties for scenarios like managing encryption at rest across data services to further comply with least privilege principle. The condition constrains role assignments to the following Azure Key Vault roles:
+
+- [Key Vault Administrator](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-administrator)
+- [Key Vault Certificates Officer](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-certificates-officer)
+- [Key Vault Crypto Officer](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-crypto-officer)
+- [Key Vault Crypto Service Encryption User](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-crypto-service-encryption-user)
+- [Key Vault Crypto User](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-crypto-user)
+- [Key Vault Reader](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-reader)
+- [Key Vault Secrets Officer](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-secrets-officer)
+- [Key Vault Secrets User](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#key-vault-secrets-user)
+
+If you want to further constrain the Key Vault Data Access Administrator role assignment, you can add your own condition to constrain the **types of principals** (users, groups, or service principals) or **specific principals** that can be assigned the Key Vault roles.
+
+## Known issues
+
+Here are the known issues related to delegating role assignment management with conditions:
+
+- You can't delegate role assignment management for custom roles with conditions using [Privileged Identity Management](https://learn.microsoft.com/en-us/azure/active-directory/privileged-identity-management/pim-resource-roles-assign-roles).
+- You can't have a role assignment with a Microsoft.Storage data action and an ABAC condition that uses a GUID comparison operator. For more information, see [Troubleshoot Azure RBAC](https://learn.microsoft.com/en-us/azure/role-based-access-control/troubleshooting#symptom---authorization-failed).
+
+## License requirements
+
+Using this feature is free and included in your Azure subscription.
+
+## Next steps
+
+- [Delegate Azure role assignment management to others with conditions](https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-portal)
+- [What is Azure attribute-based access control (Azure ABAC)?](https://learn.microsoft.com/en-us/azure/role-based-access-control/conditions-overview)
+- [Examples to delegate Azure role assignment management with conditions](https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-examples)

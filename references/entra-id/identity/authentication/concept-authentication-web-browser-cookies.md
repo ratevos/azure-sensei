@@ -1,0 +1,73 @@
+# Web browser cookies used in Microsoft Entra authentication
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-web-browser-cookies  
+> Microsoft doc last updated: 03/04/2025
+
+
+During authentication against Microsoft Entra ID through a web browser, multiple cookies are involved in the process. Some of the cookies are common on all requests. Other cookies are used for specific authentication flows or specific client-side conditions.  
+
+Persistent session tokens are stored as persistent cookies on the web browser's cookie jar. Non-persistent session tokens are stored as session cookies on the web browser, and are destroyed when the browser session is closed. 
+
+ 
+|  Cookie Name | Type | Comments |
+|--|--|--|
+| ESTSAUTH | Common | Contains user's session information to facilitate SSO. Transient. |
+| ESTSAUTHPERSISTENT | Common | Contains user's session information to facilitate SSO. Persistent. |
+| ESTSAUTHLIGHT | Common  | Contains Session GUID Information. Lite session state cookie used exclusively by client-side JavaScript in order to facilitate OIDC sign-out. Security feature. |
+| SignInStateCookie | Common | Contains list of services accessed to facilitate sign-out. No user information. Security feature. |
+| CCState | Common | Contains session information state to be used between Microsoft Entra ID and the [Microsoft Entra Backup Authentication Service](https://learn.microsoft.com/en-us/entra/identity/conditional-access/resilience-defaults). |
+| buid | Common | Tracks browser related information. Used for service telemetry and protection mechanisms. |
+| fpc | Common | Tracks browser related information. Used for tracking requests and throttling. |
+| esctx | Common | Session context cookie information. For CSRF protection. Binds a request to a specific browser instance so the request can't be replayed outside the browser. No user information. |
+| ch | Common | ProofOfPossessionCookie. Stores the Proof of Possession cookie hash to the user agent. |
+| ESTSSC | Common | Legacy cookie containing session count information no longer used. |
+| ESTSSSOTILES | Common | Tracks session sign-out. When present and not expired, with value "ESTSSSOTILES=1", it interrupts SSO, for specific SSO authentication model, and presents tiles for user account selection. |
+| AADSSOTILES | Common | Tracks session sign-out. Similar to ESTSSSOTILES but for other specific SSO authentication model. |
+| ESTSUSERLIST | Common | Tracks Browser SSO user's list. |
+| SSOCOOKIEPULLED | Common | Prevents looping on specific scenarios. No user information. |
+| cltm | Common | For telemetry purposes. Tracks AppVersion, ClientFlight, and Network type. | 
+| brcap | Common | Client-side cookie (set by JavaScript) to validate client/web browser's touch capabilities. |
+| clrc | Common | Client-side cookie (set by JavaScript) to control local cached sessions on the client. |
+| CkTst | Common | Client-side cookie (set by JavaScript). No longer in active use. | 
+| wlidperf | Common | Client-side cookie (set by JavaScript) that tracks local time for performance purposes. |
+| x-ms-gateway-slice | Common | Microsoft Entra Gateway cookie used for tracking and load balance purposes. |
+| stsservicecookie | Common | Microsoft Entra Gateway cookie also used for tracking purposes. |
+| x-ms-refreshtokencredential | Specific | Available when [Primary Refresh Token (PRT)](https://learn.microsoft.com/en-us/entra/identity/devices/concept-primary-refresh-token) is in use. |
+| estsStateTransient | Specific | Applicable to new session information model only. Transient. | 
+| estsStatePersistent | Specific | Same as estsStateTransient, but persistent. |
+| ESTSNCLOGIN | Specific | National Cloud Login related Cookie. | 
+| UsGovTraffic | Specific | US Gov Cloud Traffic Cookie. | 
+| ESTSWCTXFLOWTOKEN | Specific | Saves flowToken information when redirecting to ADFS. |
+| CcsNtv | Specific | To control when Microsoft Entra Gateway sends requests to [Microsoft Entra Backup Authentication Service](https://learn.microsoft.com/en-us/entra/identity/conditional-access/resilience-defaults). Native flows. | 
+| CcsWeb | Specific | To control when Microsoft Entra Gateway sends requests to [Microsoft Entra Backup Authentication Service](https://learn.microsoft.com/en-us/entra/identity/conditional-access/resilience-defaults). Web flows. | 
+| Ccs* | Specific | Cookies with prefix Ccs*, have the same purpose as the ones without prefix, but only apply when [Microsoft Entra Backup Authentication Service](https://learn.microsoft.com/en-us/entra/identity/conditional-access/resilience-defaults) is in use. | 
+| threxp | Specific | Used for throttling control. | 
+| rrc | Specific | Cookie used to identify a recent B2B invitation redemption. | 
+| debug | Specific | Cookie used to track if user's browser session is enabled for DebugMode. |
+| MSFPC | Specific | This cookie is not specific to any ESTS flow, but is sometimes present. It applies to all Microsoft Sites (when accepted by users). Identifies unique web browsers visiting Microsoft sites. It's used for advertising, site analytics, and other operational purposes. |
+
+> [!NOTE] 
+> Cookies identified as client-side cookies are set locally on the client device by JavaScript, hence, will be marked with HttpOnly=false.  
+>
+> Cookie definitions and respective names are subject to change at any moment in time according to Microsoft Entra service requirements.  
+
+## When Cookies Are Not Available to Entra ID 
+ 
+Under certain conditions, the cookies listed above might not be fully available to Microsoft Entra ID. This can occur due to factors such as use of unsupported or non‑Microsoft authentication libraries, privacy features, browser-specific behavior including scenarios where InPrivate or Incognito browsing modes are used.
+
+When cookies are not correctly provided to Entra ID, users may experience one or more of the following issues:
+
+- Single sign-on (SSO) does not function as expected, and users are prompted to reauthenticate
+- Users may see unexpected confirmation or consent dialogs
+- The sign-out experience may fail or terminate before completion (for example, the `post_logout_redirect_uri` parameter is not processed)
+
+To ensure a consistent and reliable authentication experience, Microsoft recommends using supported browsers and supported client authentication libraries, such as the Microsoft Authentication Library (MSAL). This helps ensure cookies are handled correctly and authentication and sign-out flows operate as designed.
+
+## Next steps
+
+To learn more about self-service password reset concepts, see [How Microsoft Entra self-service password reset works][concept-sspr].
+
+To learn more about multifactor authentication concepts, see [How Microsoft Entra multifactor authentication works][concept-mfa].
+
+[concept-sspr]: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks
+[concept-mfa]: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-mfa-howitworks

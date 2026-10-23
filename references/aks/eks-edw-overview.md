@@ -1,0 +1,74 @@
+# Replicate an AWS EDW workload with KEDA and Karpenter in Azure Kubernetes Service (AKS)
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/eks-edw-overview  
+> Microsoft doc last updated: 06/20/2024
+
+
+In this article, you learn how to replicate an Amazon Web Services (AWS) Elastic Kubernetes Service (EKS) event-driven workflow (EDW) workload with [KEDA](https://keda.sh) and [Karpenter](https://karpenter.sh) in AKS.
+
+This workload is an implementation of the [competing consumers][competing-consumers] pattern using a producer/consumer app that facilitates efficient data processing by separating data production from data consumption. You use KEDA to scale pods running consumer processing and Karpenter to autoscale Kubernetes nodes.
+
+If you plan to migrate an AWS workload to Azure, see [Migrate compute from Amazon Web Services to Azure](https://learn.microsoft.com/en-us/azure/migration/migrate-compute-from-aws), which includes [example migration scenarios](https://learn.microsoft.com/en-us/azure/migration/migrate-compute-from-aws#migration-scenarios) that might align to your use case. For a more detailed understanding of the AWS workload, see [Scalable and Cost-Effective Event-Driven Workloads with KEDA and Karpenter on Amazon EKS][edw-aws-eks].
+
+## Deployment process
+
+1. [**Understand the conceptual differences**](https://learn.microsoft.com/en-us/azure/aks/eks-edw-understand): Start by reviewing the differences between AWS and AKS in terms of services, architecture, and deployment.
+1. [**Rearchitect the workload**](https://learn.microsoft.com/en-us/azure/aks/eks-edw-rearchitect): Analyze the existing AWS workload architecture and identify the components or services that you need to redesign to fit AKS. You need to make changes to the workload infrastructure, application architecture, and deployment process.
+1. [**Update the application code**](https://learn.microsoft.com/en-us/azure/aks/eks-edw-refactor): Ensure your code is compatible with Azure APIs, services, and authentication models.
+1. [**Prepare for deployment**](https://learn.microsoft.com/en-us/azure/aks/eks-edw-prepare): Modify the AWS deployment process to use the Azure CLI.
+1. [**Deploy the workload**](https://learn.microsoft.com/en-us/azure/aks/eks-edw-deploy): Deploy the replicated workload in AKS and test the workload to ensure that it functions as expected.
+
+## Prerequisites
+
+- An Azure account. If you don't have one, create a [free account][azure-free] before you begin.
+- The **Owner** [Azure built-in role][azure-built-in-roles], or the **User Access Administrator** and **Contributor** built-in roles, on a subscription in your Azure account.
+- [Azure CLI][install-cli] version 2.56 or later.
+- [Azure Kubernetes Service (AKS) preview extension][aks-preview].
+- [jq][install-jq] version 1.5 or later.
+- [Python 3.12][install-python] or later.
+- [kubectl][install-kubectl] version 1.21.0 or later
+- [Helm][install-helm] version 3.0.0 or later
+- [Visual Studio Code][download-vscode] or equivalent.
+
+### Download the Azure application code
+
+The **completed** application code for this workflow is available in our [GitHub repository][github-repo]. Clone the repository to a directory called `aws-to-azure-edw-workshop` on your local machine by running the following command:
+
+```bash
+git clone https://github.com/Azure-Samples/aks-event-driven-replicate-from-aws ./aws-to-azure-edw-workshop
+```
+
+After you clone the repository, navigate to the `aws-to-azure-edw-workshop` directory and start Visual Studio Code by running the following commands:
+
+```bash
+cd aws-to-azure-edw-workshop
+code .
+```
+
+## Next steps
+
+> [Understand platform differences][eks-edw-understand]
+
+## Contributors
+
+*Microsoft maintains this article. The following contributors originally wrote it:*
+
+- Ken Kilty | Principal TPM
+- Russell de Pina | Principal TPM
+- Jenny Hayes | Senior Content Developer
+- Carol Smith | Senior Content Developer
+- Erin Schaffer | Content Developer 2
+
+[competing-consumers]: https://learn.microsoft.com/en-us/azure/architecture/patterns/competing-consumers
+[edw-aws-eks]: https://aws.amazon.com/blogs/containers/scalable-and-cost-effective-event-driven-workloads-with-keda-and-karpenter-on-amazon-eks/
+[azure-free]: https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn
+[azure-built-in-roles]: https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles
+[install-cli]: https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+[aks-preview]: https://learn.microsoft.com/en-us/azure/aks/draft#install-the-aks-preview-azure-cli-extension
+[install-jq]: https://jqlang.github.io/jq/
+[install-python]: https://www.python.org/downloads/
+[install-kubectl]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
+[install-helm]: https://helm.sh/docs/intro/install/
+[download-vscode]: https://code.visualstudio.com/Download
+[github-repo]: https://github.com/Azure-Samples/aks-event-driven-replicate-from-aws
+[eks-edw-understand]: https://learn.microsoft.com/en-us/azure/aks/eks-edw-understand

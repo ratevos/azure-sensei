@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: aks-entra-rbac-cluster
+expected_outcome: |
+  An implementation guide using az aks commands and flags verified in the bundled CLI reference and AKS docs (managed Entra integration, Azure RBAC enabled, admin group object IDs, local accounts disabled), with role assignments, how admins get credentials, verification, rollback and source links.

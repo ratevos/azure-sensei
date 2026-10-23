@@ -1,0 +1,37 @@
+# Add linked single sign-on to an application
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-linked-sign-on  
+> Microsoft doc last updated: 06/20/2025
+
+
+This article shows you how to configure linked-based single sign-on (SSO) for your application in Microsoft Entra ID. Linked-based SSO enables Microsoft Entra ID to provide SSO to an application that is already configured for SSO in another service. The linked option lets you configure the target location when a user selects the application in your organization's My Apps or Microsoft 365 portal.
+
+The term 'another service' refers to an external identity provider or service that has already configured SSO for the application. Microsoft Entra ID acts as a facilitator, linking users to the application without managing the sign-on process itself.
+
+Linked-based SSO doesn't provide sign-on functionality through Microsoft Entra ID. The option simply sets the location that users are sent when they select the application on the My Apps or Microsoft 365 portal.
+
+Some common scenarios where linked-based SSO is valuable include:
+
+- Add a link to a custom web application that currently uses federation, such as Active Directory Federation Services (ADFS).
+- Add deep links to specific web pages that you want to appear on your user's access pages.
+- Add a link to an application that doesn't require authentication. The linked option doesn't provide sign-on functionality through Microsoft Entra credentials, but you can still use some of the other features of enterprise applications. For example, you can use audit logs and add a custom logo and application name.
+
+## Prerequisites
+
+To configure linked-based SSO in your Microsoft Entra tenant, you need:
+- A Microsoft Entra user account. If you don't already have one, you can [Create an account for free](https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn)
+- One of the following roles: Cloud Application Administrator, Application Administrator, or owner of the service principal.
+- An application that supports linked-based SSO.
+
+## Configure linked-based single sign-on
+
+1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) as at least a [Cloud Application Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#cloud-application-administrator).
+1. Browse to **Entra ID** > **Enterprise apps** > **All applications**.
+1. Search for and select the application that you want to add linked SSO.
+1. Select **Single sign-on** and then select **Linked**.
+1. Enter the URL for the sign-in page of the application.
+1. Select **Save**. 
+
+## Next steps
+
+- [Manage access to apps](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/what-is-access-management)

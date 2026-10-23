@@ -1,0 +1,65 @@
+# unifiedRoleDefinition resource type
+
+> Source: https://learn.microsoft.com/en-us/graph/api/resources/unifiedroledefinition?view=graph-rest-1.0  
+> Microsoft doc last updated: 10/07/2026
+
+
+Namespace: microsoft.graph
+
+A role definition is a collection of permissions in Microsoft Entra listing the operations that can be performed and the resources against which they can performed.
+
+## Methods
+
+| Method       | Return Type | Description |
+|:-------------|:------------|:------------|
+| [List](../api/rbacapplication-list-roledefinitions.md) | [unifiedRoleDefinition](unifiedroledefinition.md) collection | Read a list of unifiedRoleDefinition objects, and their properties. |
+| [Get](../api/unifiedroledefinition-get.md) | [unifiedRoleDefinition](unifiedroledefinition.md) | Read the properties of an active or soft-deleted unifiedRoleDefinition object. |
+| [Create](../api/rbacapplication-post-roledefinitions.md) | [unifiedRoleDefinition](unifiedroledefinition.md) | Create a unifiedRoleDefinition object. |
+| [Update](../api/unifiedroledefinition-update.md) | [unifiedRoleDefinition](unifiedroledefinition.md) | Update a unifiedRoleDefinition object. |
+| [Delete](../api/unifiedroledefinition-delete.md) | None | Delete an active unifiedRoleDefinition object or permanently delete a soft-deleted custom role definition. |
+| [unifiedRoleDefinition: restore](../api/unifiedroledefinition-restore.md) | [unifiedRoleDefinition](unifiedroledefinition.md) | Restore a soft-deleted custom role definition. |
+
+## Properties
+
+| Property     | Type        | Description |
+|:-------------|:------------|:------------|
+|description|String| The description for the unifiedRoleDefinition. Read-only when **isBuiltIn** is `true`. |
+|displayName|String| The display name for the unifiedRoleDefinition. Read-only when **isBuiltIn** is `true`. Required.  Supports $filter (`eq`, `in`).|
+|id|String| The unique identifier for the role definition. Key, not nullable, Read-only. Inherited from [entity](../resources/entity.md). Supports $filter (`eq`, `in`). |
+|isBuiltIn|Boolean| Flag indicating whether the role definition is part of the default set included in Microsoft Entra or a custom definition. Read-only. Supports $filter (`eq`, `in`). |
+|isEnabled|Boolean| Flag indicating whether the role is enabled for assignment. If `false` the role is not available for assignment. Read-only when **isBuiltIn** is true. |
+|resourceScopes|String collection| List of the scopes or permissions the role definition applies to. Currently only `/` is supported. Read-only when **isBuiltIn** is true. **DO NOT USE. This will be deprecated soon. Attach scope to role assignment.** | 
+|rolePermissions|[unifiedRolePermission](unifiedrolepermission.md) collection| List of permissions included in the role. Read-only when **isBuiltIn** is `true`. Required. |
+|templateId|String| Custom template identifier that can be set when **isBuiltIn** is `false` but is read-only when **isBuiltIn** is `true`. This identifier is typically used if one needs an identifier to be the same across different directories. |
+|version|String| Indicates version of the role definition. Read-only when **isBuiltIn** is `true`.|
+
+## Relationships
+
+| Relationship | Type        | Description |
+|:-------------|:------------|:------------|
+|inheritsPermissionsFrom| [unifiedRoleDefinition](unifiedroledefinition.md) collection| Read-only collection of role definitions that the given role definition inherits from. Only Microsoft Entra built-in roles (**isBuiltIn** is `true`) support this attribute. Supports `$expand`. |
+
+## JSON representation
+
+The following JSON representation shows the resource type.
+
+```json
+{
+  "@odata.type": "#microsoft.graph.unifiedRoleDefinition",
+  "description": "String",
+  "displayName": "String",
+  "id": "String (identifier)",
+  "isBuiltIn": "Boolean",
+  "isEnabled": "Boolean",
+  "resourceScopes": [
+    "String"
+  ],
+  "rolePermissions": [
+    {
+      "@odata.type": "microsoft.graph.unifiedRolePermission"
+    }
+  ],
+  "templateId": "String",
+  "version": "String"
+}
+```

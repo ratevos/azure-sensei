@@ -1,0 +1,89 @@
+# Security questions authentication method
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-security-questions  
+> Microsoft doc last updated: 02/18/2026
+
+
+Security questions aren't used as an authentication method during a sign-in event. Instead, security questions can be used during the self-service password reset (SSPR) process to confirm who you are. Administrator accounts can't use security questions as verification method with SSPR.
+
+> [!WARNING]
+> **Security questions will be retired for Self‑Service Password Reset (SSPR) in March 2027.** After that date, users will no longer be able to reset passwords using security questions. Ensure users are set up with [supported authentication methods](https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr#select-authentication-methods-and-registration-options) in the Authentication methods policy.
+>
+> This feature is being deprecated due to security risks and low reliability. Security questions are often guessable or susceptible to social engineering, increasing the risk of account takeover during SSPR. Stronger verification methods improve security and reduce reset failures and support escalations.
+>
+> Prepare in advance to avoid user lockouts, helpdesk escalations, and failed password reset experiences once enforcement begins in March 2027.
+
+When users register for SSPR, they're prompted to choose the authentication methods to use. If they choose to use security questions, they pick from a set of questions to prompt for and then provide their own answers.
+
+> [!NOTE]
+> Security questions are stored privately and securely on a user object in the directory and can only be answered by users during registration. There's no way for an administrator to read or modify a user's questions or answers.
+
+Security questions can be less secure than other methods because some people might know the answers to another user's questions. If you use security questions with SSPR, it's recommended to use them in along with another method. A user can be prompted to use the Microsoft Authenticator App or phone authentication to verify their identity during the SSPR process, and choose security questions only if they don't have their phone or registered device with them.
+
+## Predefined questions
+
+The following predefined security questions are available for use as a verification method with SSPR. All of these security questions are translated and localized into the full set of Microsoft 365 languages based on the user's browser locale:
+
+* In what city did you meet your first spouse/partner?
+* In what city did your parents meet?
+* In what city does your nearest sibling live?
+* In what city was your father born?
+* In what city was your first job?
+* In what city was your mother born?
+* What city were you in on New Year's 2000?
+* What is the last name of your favorite teacher in high school?
+* What is the name of a college you applied to but didn't attend?
+* What is the name of the place in which you held your first wedding reception?
+* What is your father's middle name?
+* What is your favorite food?
+* What is your maternal grandmother's first and last name?
+* What is your mother's middle name?
+* What is your oldest sibling's birthday month and year? (for example, November 1985)
+* What is your oldest sibling's middle name?
+* What is your paternal grandfather's first and last name?
+* What is your youngest sibling's middle name?
+* What school did you attend for sixth grade?
+* What was the first and last name of your childhood best friend?
+* What was the first and last name of your first significant other?
+* What was the last name of your favorite grade school teacher?
+* What was the make and model of your first car or motorcycle?
+* What was the name of the first school you attended?
+* What was the name of the hospital in which you were born?
+* What was the name of the street of your first childhood home?
+* What was the name of your childhood hero?
+* What was the name of your favorite stuffed animal?
+* What was the name of your first pet?
+* What was your childhood nickname?
+* What was your favorite sport in high school?
+* What was your first job?
+* What were the last four digits of your childhood telephone number?
+* When you were young, what did you want to be when you grew up?
+* Who is the most famous person you have ever met?
+
+## Custom security questions
+
+For additional flexibility, you can define your own custom security questions. The maximum length of a custom security question is 200 characters.
+
+Custom security questions aren't automatically localized like with the default security questions. All custom questions are displayed in the same language as they're entered in the administrative user interface, even if the user's browser locale is different. If you need localized questions, you should use the predefined questions. 
+
+## Security question requirements
+
+For both default and custom security questions, the following requirements and limitations apply:
+
+* The minimum answer character limit is three characters.
+* The maximum answer character limit is 40 characters.
+* Users can't answer the same question more than one time.
+* Users can't provide the same answer to more than one question.
+* Any character set can be used to define the questions and the answers, including Unicode characters.
+* The number of questions defined must be greater than or equal to the number of questions that were required to register.
+
+## Next steps
+
+To get started, see the [tutorial for self-service password reset (SSPR)][tutorial-sspr].
+
+To learn more about SSPR concepts, see [How Microsoft Entra self-service password reset works][concept-sspr].
+
+Learn more about configuring authentication methods using the [Microsoft Graph REST API](https://learn.microsoft.com/en-us/graph/api/resources/authenticationmethods-overview).
+
+[tutorial-sspr]: https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr
+[concept-sspr]: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-howitworks

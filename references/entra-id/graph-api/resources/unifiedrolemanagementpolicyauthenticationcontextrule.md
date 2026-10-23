@@ -1,0 +1,39 @@
+# unifiedRoleManagementPolicyAuthenticationContextRule resource type
+
+> Source: https://learn.microsoft.com/en-us/graph/api/resources/unifiedrolemanagementpolicyauthenticationcontextrule?view=graph-rest-1.0  
+> Microsoft doc last updated: 04/03/2024
+
+
+Namespace: microsoft.graph
+
+A type derived from the [unifiedRoleManagementPolicyRule](../resources/unifiedrolemanagementpolicyrule.md) resource type that defines the authentication context rule for the conditional access policy associated with a role management policy.
+
+## Methods
+
+None.
+
+## Properties
+|Property|Type|Description|
+|:---|:---|:---|
+|claimValue|String|The value of the authentication context claim.|
+|id|String|Identifier for the rule. Inherited from [entity](../resources/entity.md).|
+|isEnabled|Boolean| Determines whether this rule is enabled.|
+|target|[unifiedRoleManagementPolicyRuleTarget](../resources/unifiedrolemanagementpolicyruletarget.md)|Defines details of the scope that the enablement rule targets. The details can include the principal type, the role assignment type, and actions affecting a role. Inherited from [unifiedRoleManagementPolicyRule](../resources/unifiedrolemanagementpolicyrule.md). Supports `$filter` (`eq`, `ne`).|
+
+## Relationships
+None.
+
+## JSON representation
+The following JSON representation shows the resource type.
+
+``` json
+{
+  "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyAuthenticationContextRule",
+  "id": "String (identifier)",
+  "target": {
+    "@odata.type": "microsoft.graph.unifiedRoleManagementPolicyRuleTarget"
+  },
+  "isEnabled": "Boolean",
+  "claimValue": "String"
+}
+```

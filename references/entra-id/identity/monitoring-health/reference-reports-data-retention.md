@@ -1,0 +1,70 @@
+# Microsoft Entra data retention
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/monitoring-health/reference-reports-data-retention  
+> Microsoft doc last updated: 01/06/2026
+
+
+In this article, you learn about the data retention policies for the different activity reports in Microsoft Entra ID.
+
+<a name='when-does-azure-ad-start-collecting-data'></a>
+
+## When does Microsoft Entra ID start collecting data?
+
+| Microsoft Entra Edition | Collection Start |
+| :--              | :--   |
+| Microsoft Entra ID P1 <br /> Microsoft Entra ID P2 <br /> Microsoft Entra Workload ID Premium | When you sign up for a subscription |
+| Microsoft Entra ID Free| The first time you open [Microsoft Entra ID](https://portal.azure.com/#blade/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/Overview) or use the [reporting APIs](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/overview-monitoring-health)  |
+
+If you already have activities data with your free license, then you can see it immediately on upgrade. If you don’t have any data, then it will take up to three days for the data to show up in the reports after you upgrade to a premium license.
+
+- For security signals, the collection process starts when you opt in to use the **Identity Protection Center**.
+- For Microsoft Graph activity logs, the collection process starts when the [log category is enabled in diagnostic settings](howto-integrate-activity-logs-with-azure-monitor-logs.yml#send-logs-to-azure-monitor).
+
+<a name='how-long-does-azure-ad-store-the-data'></a>
+
+## How long does Microsoft Entra ID store the data?
+
+Log storage within Microsoft Entra varies by report type and license type. You can retain the audit and sign-in activity data for longer than the default retention period outlined in the previous table by routing it to an Azure storage account using Azure Monitor. For more information, see [Archive Microsoft Entra logs to an Azure storage account](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-archive-logs-to-storage-account).
+
+> [!NOTE]
+> Microsoft Entra ID audit and sign-in logs are separate from the Microsoft 365 Unified Audit Log (UAL). UAL retention is managed through Microsoft Purview Audit and is not affected by Microsoft Entra ID licensing changes.
+
+### Activity reports
+
+| Report | Microsoft Entra ID Free | Microsoft Entra ID P1 | Microsoft Entra ID P2 |
+| :-- | :--  | :-- | :-- |
+| Audit logs | Seven days | 30 days | 30 days |
+| Sign-ins | Seven days | 30 days | 30 days |
+| Microsoft Entra multifactor authentication usage | 30 days | 30 days | 30 days |
+| Microsoft Graph activity logs* | NA | Must be integrated with storage or analytics tools | Must be integrated with storage or analytics tools |
+
+*Microsoft Graph activity logs are only available for Microsoft Entra ID P1 and P2 licenses. Data isn't retained unless it's archived to a storage account or integrated with analytics tools.
+
+### Security signals
+
+| Report         | Microsoft Entra ID Free | Microsoft Entra ID P1 | Microsoft Entra ID P2 |
+| :--            | :--           | :--                 | :--                 |
+| Risky users    | No limit      | No limit            | No limit            |
+| Risky sign-ins | 7 days        | 30 days             | 90 days             |
+
+> [!NOTE]
+> Organizations with Microsoft 365 E5, Office 365 E5, Microsoft Purview Suite, or E5 eDiscovery and Audit add-on licenses can also use Microsoft Purview Audit (Premium) to retain Microsoft Entra ID audit logs beyond the default period, providing an alternative to exporting logs to Azure Storage. For more information, see [Manage audit log retention policies with Microsoft Purview](https://learn.microsoft.com/en-us/purview/audit-log-retention-policies).
+
+> [!NOTE]
+> Risky users and workload identities are not deleted until the risk has been remediated.
+
+### Microsoft Entra External ID logs
+
+In the [Microsoft Entra External ID Basic plan](https://azure-int.microsoft.com/pricing/details/microsoft-entra-external-id/), logs are retained for 7 days. For more information, see [Supported features in workforce and external tenants](https://learn.microsoft.com/en-us/entra/external-id/customers/concept-supported-features-customers#activity-logs-and-reports). To retain logs for longer periods, use [Azure Monitor](https://learn.microsoft.com/en-us/entra/external-id/customers/how-to-azure-monitor) in your external tenant.
+
+## Can I see last month's data after getting a premium license?
+
+**No**, you can't. Azure stores up to seven days of activity data for a free version. When you switch from a free to a premium version, you can only see up to 7 days of data.
+
+> [!NOTE]
+> Log retention changes aren't retroactive. When you upgrade from Microsoft Entra ID Free to P1 or P2, only data still within the free retention period (up to seven days) is available. Data that has already expired can't be recovered unless it was previously archived.
+
+## Next steps
+
+- [Stream logs to an event hub](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-stream-logs-to-event-hub)
+- [Learn how to download Microsoft Entra logs](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-download-logs)

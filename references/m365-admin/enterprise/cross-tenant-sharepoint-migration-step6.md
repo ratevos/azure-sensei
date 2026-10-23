@@ -1,0 +1,164 @@
+# SharePoint site Cross-tenant SharePoint migration Step 6
+
+> Source: https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-sharepoint-migration-step6  
+> Microsoft doc last updated: 10/01/2025
+
+
+This step is Step 6 in a solution designed to complete a Cross-tenant SharePoint migration. To learn more, see [Cross-tenant SharePoint migration overview](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration).
+
+- Step 1: [Connect to the source and the tarIPs tenants](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration-step1)
+- Step 2: [Establish trust between the source and the target tenant](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration-step2)
+- Step 3: [Verify trust is established](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration-step3)
+- Step 4: [Precreate users and groups](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration-step4)
+- Step 5: [Prepare identity mapping](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration-step5)
+- **Step 6: [Start a Cross-tenant SharePoint migration](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration-step6)**
+- Step 7: [Post migration steps](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration-step7)
+
+Now you're ready to start your SharePoint migration. Before starting any cross-tenant migration, do the following steps.
+
+## Start a SharePoint Cross-tenant site migration
+
+1. Make sure you verified the compatibility status. If you see a status of either **Compatible** or **Warning** on your source tenant, you may continue. Run:
+
+   ```powershell
+   Get-SPOCrossTenantCompatibilityStatus -PartnerCrossTenantHostURL [Target tenant hostname]
+   ```
+
+2. To start the migration, a SharePoint Admin or Microsoft 365 Global Admin of the source tenant must run the following command:
+
+   ```PowerShell
+   Start-SPOCrossTenantSiteContentMove -SourceSiteUrl <…> -TargetSiteUrl <…> -TargetCrossTenantHostUrl <…>
+   ```
+
+   |Parameters|Description|
+   |---|---|
+   |SourceSiteUrl|Full URL of the SharePoint Site of the Source tenant, for example: `https://sourcetenant.sharepoint.com/sites/sitename`.|
+   |TargetSiteUrl |Full URL of the SharePoint Site of the Target tenant, for example: `https://targettenant.sharepoint.com/sites/newsitename`.|
+   |TargetCrossTenantHostUrl|The Cross-tenant host URL of the target tenant. The target tenant Admin can determine the TargetCrossTenantHostUrl by running *Get-SPOCrossTenantHostUrl* on their tenant.|
+   
+   > [!IMPORTANT]
+   > Microsoft recommends that you use roles with the fewest permissions. This permissioning helps improve security for your organization. Global Administrator is a highly privileged role that should be limited to emergency scenarios when you can't use an existing role.
+
+### Start a SharePoint Microsoft 365 Group connected site cross-tenant migration
+
+1. Ensure to verify the compatibility status. If you see a status of either **Compatible** or **Warning**  on your source tenant, you may continue. Run:
+
+   ```powershell
+   Get-SPOCrossTenantCompatibilityStatus –PartnerCrossTenantHostURL [Target tenant hostname]
+
+2. To start the migration, a SharePoint Admin or Microsoft 365 Global Admin of the source tenant must run the following command:
+
+   ```powershell
+   Start-SPOCrossTenantGroupContentMove  -SourceGroupAlias <…> -TargetGroupAlias <…> -TargetCrossTenantHostUrl <…>
+   ```
+
+   |Parameters|Description|
+   |---|---|
+   |SourceGroupAlias|Alias of the Microsoft 365 Group connected to the SharePoint Site on the Source tenant. For example: SourceGroup1|
+   |TargetGroupAlias|Alias of the Microsoft 365 that was created on the target tenant |
+   |TargetCrossTenantHostUrl|The Cross-tenant Host URL of the target tenant. The target tenant Admin can determine the TargetCrossTenantHostUrl by running *Get-SPOCrossTenantHostUrl* on their tenant|
+
+## Schedule a migration for a later time
+
+To schedule a migration for a later time, add one of the following parameters to the command.
+
+For example:
+
+```powershell
+Start-SPOCrossTenantGroupContentMove  -SourceGroupAlias <…> -TargetGroupAlias <…> -TargetCrossTenantHostUrl <…> -PreferredMoveBeginDate <…>
+```
+
+These commands can be useful when planning bulk batches of site migrations. You can queue and migrate up to 4,000 migrations per batch. If your count exceeds 4,000, then separate batches can be created and scheduled to run once the current batch is close to completion.
+
+|Parameter|Description|
+|---|---|
+|PreferredMoveBeginDate|The migration likely begins at this specified time. Time must be specified in Coordinated Universal Time (UTC).|
+|PreferredMoveEndDate|The migration likely completes by this specified time, on a best effort basis. Time must be specified in Coordinated Universal Time (UTC).|
+
+## SharePoint status premigration
+
+Before you begin the migration, the users current source SharePoint status is similar to the following. This example is from the users source tenant, showing their current files and folders.
+
+## Cancelling a SharePoint site migration
+
+You can stop the cross-tenant migration of either a SharePoint site or SharePoint Microsoft 365 Group by using the following command, provided the migration doesn't have a status of *In Progress* or *Success*.
+
+**To cancel a SharePoint site migration:**
+
+```powershell
+Stop-SPOCrossTenantSiteContentMove – SourceSiteURL [URL of Site you wish to stop]
+```
+
+**To cancel a SharePoint Microsoft 365 Group migration:**
+
+```powershell
+Stop-SPOCrossTenantGroupContentMove – SourceGroupAlias [Alias of Group connected to site you wish to stop]
+```
+
+## Determining current status of a migration
+
+After starting your migration, you can check its status using the following command on either the source OR target tenant:
+
+**Source command format:**
+
+```powershell
+Get-SPOCrossTenantUserContentMoveState -PartnerCrossTenantHostURL [Target URL]
+```
+
+Example:
+
+```Powershell
+Get-SPOCrossTenantUserContentMoveState -PartnerCrossTenantHostURL https://m365x946316-my.sharepoint.com/
+```
+
+**Target command:**
+
+```powershell
+Get-SPOCrossTenantUserContentMoveState -PartnerCrossTenantHostURL [Source URL]
+```
+
+Example:
+
+```powershell
+Get-SPOCrossTenantUserContentMoveState -PartnerCrossTenantHostURL https://m365x016551-my.sharepoint.com/
+```
+
+To find the status of a specific user's migration, use the *SourceUserPrincipalName* parameter:
+
+```powershell
+Get-SPOCrossTenantUserContentMoveState -PartnerCrossTenantHostURL <PartnerCrossTenantHostURL> -SourceUserPrincipalName <UPN>
+```
+
+Example:
+
+```powershell
+Get-SPOUserAndContentMoveState -PartnerCrossTenantHostURL https://m365x946316-my.sharepoint.com -SourceUserPrincipalName DiegoS@M365x016651.OnMicrosoft.com
+```
+
+To get the status of the move based on a particular user's UPN but with more information, use the *-Verbose* parameter.
+
+Example:
+
+```PowerShell
+Get-SPOCrossTenantUserContentMoveState -PartnerCrossTenantHostURL https://ttesttenant-my.sharepoint.com -SourceUserPrincipalName User3@stesttenant.onmicrosoft.com -Verbose
+```
+
+## Migration States
+
+|Status         |Description |
+|---------------|------------|
+|NotStarted     |The migration isn't started yet. |
+|Scheduled      |The migration is now in the queue and is scheduled to run when a slot becomes available. |
+|ReadytoTrigger |The Migration is in its preflight stage and the Migration starts shortly. |
+|InProgress     |The migration is in progress in one of the following states: </br>- Validation. </br>- Backup. </br>- Restore. </br>- Cleanup. |
+|Success        |The Migration completed successfully. |
+|Rescheduled    |The migration didn't complete and was requeued for another pass. |
+|Failed         |The migration failed to complete. |
+
+## Post-migration status checks
+
+**Target tenant**: After the migration successfully completed, check the status of the user on the target tenant by logging into their new SharePoint account.
+
+**Source tenant**: Once the user successfully migrates to the target tenant, they no longer have an active SharePoint account on the source.
+
+## Step 7: [Post migration steps](https://learn.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-SharePoint-migration-step7)

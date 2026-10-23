@@ -1,0 +1,112 @@
+# Update the Key Vault Mode for an Azure Kubernetes Service (AKS) Cluster with KMS Etcd Encryption (legacy)
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/update-kms-key-vault  
+> Microsoft doc last updated: 05/01/2026
+
+
+This article shows you how to update the key vault mode from public to private or private to public for an Azure Kubernetes Service (AKS) cluster with Key Management Service (KMS) etcd encryption.
+
+## Prerequisites
+
+- An AKS cluster with KMS etcd encryption enabled. For more information, see [Add Key Management Service (KMS) etcd encryption to an Azure Kubernetes Service (AKS) cluster](https://learn.microsoft.com/en-us/azure/aks/use-kms-etcd-encryption).
+- Azure CLI version 2.39.0 or later. Find your version using the `az --version` command. If you need to install or upgrade, see [Install the Azure CLI][azure-cli-install].
+
+## Update a key vault mode
+
+> [!NOTE]
+> To change a different key vault with a different mode (whether public or private), you can run [`az aks update`][az-aks-update] directly. To change the mode of an attached key vault, you must first turn off KMS, then turn it on again using the new key vault IDs.
+
+### [Update from a public to a private key vault](#tab/public-to-private)
+
+1. Turn off KMS on the existing cluster and release the key vault using the [`az aks update`][az-aks-update] command with the `--disable-azure-keyvault-kms` parameter.
+
+   ```azurecli-interactive
+   az aks update --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --disable-azure-keyvault-kms
+   ```
+
+    > [!WARNING]
+    > After you turn off KMS, the encryption key vault key is still needed. You can't delete or expire it.
+
+1. Update all secrets using the `kubectl get secrets` command to ensure the secrets created earlier are no longer encrypted. For larger clusters, you might want to subdivide the secrets by namespace or create an update script. If the previous command to update KMS fails, still run the following command to avoid unexpected state for KMS plugin.
+
+    ```bash
+    kubectl get secrets --all-namespaces -o json | kubectl replace -f -
+    ```
+
+    When you run the command, the following error is safe to ignore:
+
+    ```output
+    The object has been modified; please apply your changes to the latest version and try again.
+    ```
+
+1. Turn on KMS with the updated private key vault using the [`az aks update`][az-aks-update] command with the `--azure-keyvault-kms-key-vault-network-access` parameter set to `Private`.
+
+   ```azurecli-interactive
+   az aks update \
+        --name $CLUSTER_NAME \
+        --resource-group $RESOURCE_GROUP  \
+        --enable-azure-keyvault-kms \
+        --azure-keyvault-kms-key-id $KEY_ID \
+        --azure-keyvault-kms-key-vault-network-access "Private" \
+        --azure-keyvault-kms-key-vault-resource-id $KEY_VAULT_RESOURCE_ID
+   ```
+
+1. Update the key vault from public to private using the [`az keyvault update`][azure-keyvault-update] command with the `--public-network-access` parameter set to `Disabled`.
+
+   ```azurecli-interactive
+   az keyvault update --name $KEY_VAULT --resource-group $RESOURCE_GROUP --public-network-access Disabled
+   ```
+
+### [Update from a private to a public key vault](#tab/private-to-public)
+
+1. Turn off KMS on the existing cluster to release the key vault using the [`az aks update`][az-aks-update] command.
+
+   ```azurecli-interactive
+   az aks update --name $CLUSTER_NAME --resource-group $RESOURCE_GROUP --disable-azure-keyvault-kms
+   ```
+
+    > [!WARNING]
+    > After you turn off KMS, the encryption key vault key is still needed. You can't delete or expire it.
+
+1. Update all secrets using the `kubectl get secrets` command to ensure the secrets created earlier are no longer encrypted. For larger clusters, you might want to subdivide the secrets by namespace or create an update script. If the previous command to update KMS fails, still run the following command to avoid unexpected state for KMS plugin.
+
+    ```bash
+    kubectl get secrets --all-namespaces -o json | kubectl replace -f -
+    ```
+
+    When you run the command, the following error is safe to ignore:
+
+    ```output
+    The object has been modified; please apply your changes to the latest version and try again.
+    ```
+
+1. Update the key vault from public to private using the [`az keyvault update`][azure-keyvault-update] command with the `--public-network-access` parameter set to `Enabled`.
+
+   ```azurecli-interactive
+   az keyvault update --name $KEY_VAULT --resource-group $RESOURCE_GROUP --public-network-access Enabled
+   ```
+
+1. Turn on KMS with the updated private key vault using the [`az aks update`][az-aks-update] command with the `--azure-keyvault-kms-key-vault-network-access` parameter set to `Public`.
+
+   ```azurecli-interactive
+   az aks update \
+        --name $CLUSTER_NAME \
+        --resource-group $RESOURCE_GROUP  \
+        --enable-azure-keyvault-kms \
+        --azure-keyvault-kms-key-id $KEY_ID \
+        --azure-keyvault-kms-key-vault-network-access "Public" \
+        --azure-keyvault-kms-key-vault-resource-id $KEY_VAULT_RESOURCE_ID
+   ```
+
+---
+
+## Next steps
+
+For more information on using KMS with AKS, see the following articles:
+
+- [Use KMS v2 for etcd encryption in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/use-kms-v2)
+- [Observability for KMS etcd encryption in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/kms-observability)
+
+[azure-cli-install]: https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+[az-aks-update]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-update
+[azure-keyvault-update]: https://learn.microsoft.com/en-us/cli/azure/keyvault#az-keyvault-update

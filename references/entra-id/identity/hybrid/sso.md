@@ -1,0 +1,35 @@
+# Get started with single sign-on
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/hybrid/sso  
+> Microsoft doc last updated: 04/09/2025
+
+
+Setting up single sign-on, depends on which synchronization tool you're using and what your business goals are. Use the following tables to determine which features meet your target objectives.
+
+## Cloud sync
+
+After installing the Microsoft Entra Connect provisioning agent, you need to configure single sign-on for cloud sync. The following table provides a list of steps required for using single sign-on.
+  
+|Task|Description|
+|-----|-----|
+|Download and extract Microsoft Entra Connect files|Download and extract the Microsoft Entra Connect files to use the PowerShell modules.|
+|Import the Seamless single sign-on PowerShell module|Import the PowerShell modules into a PowerShell session.|
+|Get the list of Active Directory forests with Seamless single sign-on enabled.|Determine where single sign-on is enabled.|
+|Enable Seamless single sign-on for each Active Directory forest|Enable single sign-on on your forests.|
+|Enable the feature on your tenant|Enable single sign-on on your tenant.|
+
+For more information, see [configuring single sign-on with cloud sync](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-sso).
+
+<a name='azure-ad-connect'></a>
+
+## Microsoft Entra Connect
+Microsoft Entra seamless single sign-on (Seamless single sign-on) automatically signs in users when they're using their corporate desktops that are connected to your corporate network. The following table provides a list of steps required for using single sign-on.
+
+|Task|Description|
+|-----|-----|
+|Check the prerequisites|Review the prerequisites and ensure you can enable single sign-on.|
+|Enable the feature|Use the Microsoft Entra Connect wizard to enable single sign-on.|
+|Roll out the feature|Gradually implement single sign-on.|
+|Test single sign-on|Ensure single sign-on is working.|
+
+For more information, see [configuring single sign-on with Microsoft Entra Connect](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sso-quick-start) and [configuring single sign-on with cloud sync](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-sso).

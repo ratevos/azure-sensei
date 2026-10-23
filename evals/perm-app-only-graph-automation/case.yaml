@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: perm-app-only-graph-automation
+expected_outcome: |
+  Least-privileged application permissions taken from the bundled Graph per-API lookup for creating users and listing sign-ins, noting admin consent, permission IDs, the higher-privileged alternatives to avoid, licensing or other prerequisites the docs state for sign-in logs, and a recommendation on credential type, with sources.

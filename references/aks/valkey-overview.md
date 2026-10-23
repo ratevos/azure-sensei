@@ -1,0 +1,53 @@
+# Solution Overview for Deploying a Valkey Cluster on Azure Kubernetes Service (AKS)
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/valkey-overview  
+> Microsoft doc last updated: 09/15/2025
+
+
+This article summarizes the steps to deploy Valkey, an open source (BSD) high-performance key/value datastore, on Azure Kubernetes Service (AKS). The Valkey deployment focuses on leveraging replicas and availability zones for high availability and resilience. We also provide guidance to test the resilience of your Valkey deployment using the [Locust load testing framework](https://github.com/locustio/locust).
+
+> [!IMPORTANT]
+>
+> Open-source software is mentioned throughout AKS documentation and samples. Software that you deploy is excluded from AKS service-level agreements, limited warranty, and Azure support. As you use open-source technology alongside AKS, consult the support options available from the respective communities and project maintainers to develop a plan.
+>
+> Microsoft takes responsibility for building the open-source packages that we deploy on AKS. That responsibility includes having complete ownership of the build, scan, sign, validate, and hotfix process, along with control over the binaries in container images. For more information, see [Vulnerability management for AKS](https://learn.microsoft.com/en-us/azure/aks/concepts-vulnerability-management#aks-container-images) and [AKS support coverage](https://learn.microsoft.com/en-us/azure/aks/support-policies#aks-support-coverage).
+
+## What is Valkey?
+
+[Valkey][valkey] is a fork of the [Redis project][redis] that preserves its original open-source license. Valkey is a high performance database that supports a key-value datastore, and you can use it for caching, session storage, message queues, and more. A _Valkey cluster_ has multiple nodes that are responsible for hosting your Valkey data stores. Valkey shards data into smaller portions and disperses it among the nodes. In a simplified Valkey cluster consisting of _three_ primary nodes, a single replica node supports each node to enable basic failover capabilities. The data is distributed across the nodes, enabling the cluster to continue functioning even if one of the nodes fails.
+
+For more information, see the [Valkey documentation][valkey-docs].
+
+## Valkey solution overview
+
+This solution deploys three Valkey primary pods across two availability zones with one replica pod per primary in a third zone, running on `Standard_E64_v5` SKU nodes. You create two distinct `StatefulSet` resources with `spec.affinity` rules that ensure zone distribution for high availability. You create one [StatefulSet][kubernetes-stateful-sets] for the Valkey primary pods and another for the replica pods.
+
+> [!NOTE]
+> Note that the solution suggested in this article differs from the Valkey documentation, where cluster Pods belong to a single `StatefulSet`, and the `spec.affinity` only ensures that the Pods are placed on different nodes. The automatic Valkey cluster initialization presented in the Valkey documentation doesn't ensure that the primary and replica Pods for the same shard are placed in different availability zones.
+
+## Next step
+
+> [Create the infrastructure resources for running a Valkey cluster on AKS][create-valkey-infrastructure]
+
+## Contributors
+
+_Microsoft maintains this article. The following contributors originally wrote it:_
+
+- Nelly Kiboi | Service Engineer
+- Saverio Proto | Principal Customer Experience Engineer
+- Don High | Principal Customer Engineer
+- LaBrina Loving | Principal Service Engineer
+- Ken Kilty | Principal TPM
+- Russell de Pina | Principal TPM
+- Colin Mixon | Product Manager
+- Ketan Chawda | Senior Customer Engineer
+- Naveed Kharadi | Customer Experience Engineer
+- Erin Schaffer | Content Developer 2
+
+[valkey]: https://valkey.io/
+[redis]: https://redis.io/
+[valkey-docs]: https://valkey.io/docs/
+[kubernetes-stateful-sets]: https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+
+[azure-cache-for-redis]: https://learn.microsoft.com/en-us/azure/azure-cache-for-redis/cache-overview#feature-comparison
+[create-valkey-infrastructure]: https://learn.microsoft.com/en-us/azure/aks/create-valkey-infrastructure

@@ -1,0 +1,93 @@
+# Quickstart: Assign an Azure role using Bicep - Azure RBAC
+
+> Source: https://learn.microsoft.com/en-us/azure/role-based-access-control/quickstart-role-assignments-bicep  
+> Microsoft doc last updated: 12/01/2023
+
+
+[Azure role-based access control (Azure RBAC)](https://learn.microsoft.com/en-us/azure/role-based-access-control/overview) is the way that you manage access to Azure resources. In this quickstart, you create a resource group and grant a user access to create and manage virtual machines in the resource group. This quickstart uses Bicep to grant the access.
+
+## Prerequisites
+
+To assign Azure roles and remove role assignments, you must have:
+
+- If you don't have an Azure subscription, create a [free account](https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn) before you begin.
+- `Microsoft.Authorization/roleAssignments/write` and `Microsoft.Authorization/roleAssignments/delete` permissions, such as [Role Based Access Control Administrator](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#role-based-access-control-administrator).
+- To assign a role, you must specify three elements: security principal, role definition, and scope. For this quickstart, the security principal is you or another user in your directory, the role definition is [Virtual Machine Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-contributor), and the scope is a resource group that you specify.
+
+## Review the Bicep file
+
+The Bicep file used in this quickstart is from [Azure Quickstart Templates](https://azure.microsoft.com/resources/templates/rbac-builtinrole-resourcegroup/). The Bicep file has two parameters and a resources section. In the resources section, notice that it has the three elements of a role assignment: security principal, role definition, and scope.
+
+:::code language="bicep" source="~/quickstart-templates/quickstarts/microsoft.authorization/rbac-builtinrole-resourcegroup/main.bicep":::
+
+The resource defined in the Bicep file is:
+
+- [Microsoft.Authorization/roleAssignments](https://learn.microsoft.com/en-us/azure/templates/Microsoft.Authorization/roleAssignments)
+
+## Deploy the Bicep file
+
+1. Save the Bicep file as **main.bicep** to your local computer.
+1. Deploy the Bicep file using either Azure CLI or Azure PowerShell.
+
+    # [CLI](#tab/CLI)
+
+    ```azurecli
+    az group create --name exampleRG --location eastus
+    az deployment group create --resource-group exampleRG --template-file main.bicep --parameters roleDefinitionID=9980e02c-c2be-4d73-94e8-173b1dc7cf3c principalId=<principal-id>
+    ```
+
+    # [PowerShell](#tab/PowerShell)
+
+    ```azurepowershell
+    New-AzResourceGroup -Name exampleRG -Location eastus
+    New-AzResourceGroupDeployment -ResourceGroupName exampleRG -TemplateFile ./main.bicep -roleDefinitionID "9980e02c-c2be-4d73-94e8-173b1dc7cf3c" -principalId "<principal-id>"
+    ```
+
+    ---
+
+> [!NOTE]
+> Replace **\<principal-id\>** with the principal ID assigned to the role.
+
+ When the deployment finishes, you should see a message indicating the deployment succeeded.
+
+## Review deployed resources
+
+Use the Azure portal, Azure CLI, or Azure PowerShell to list the deployed resources in the resource group.
+
+# [CLI](#tab/CLI)
+
+```azurecli-interactive
+az role assignment list --resource-group exampleRG
+```
+
+# [PowerShell](#tab/PowerShell)
+
+```azurepowershell-interactive
+Get-AzRoleAssignment -ResourceGroupName exampleRG
+```
+
+---
+
+## Clean up resources
+
+When no longer needed, use the Azure portal, Azure CLI, or Azure PowerShell to remove the role assignment. For more information, see [Remove Azure role assignments](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments-remove).
+
+Use the Azure portal, Azure CLI, or Azure PowerShell to delete the resource group.
+
+# [CLI](#tab/CLI)
+
+```azurecli-interactive
+az group delete --name exampleRG
+```
+
+# [PowerShell](#tab/PowerShell)
+
+```azurepowershell-interactive
+Remove-AzResourceGroup -Name exampleRG
+```
+
+---
+
+## Next steps
+
+> [Tutorial: Grant a user access to Azure resources using Azure PowerShell](https://learn.microsoft.com/en-us/azure/role-based-access-control/tutorial-role-assignments-user-powershell)

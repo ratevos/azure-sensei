@@ -1,0 +1,177 @@
+# Microsoft Entra Connect and Microsoft Entra Connect Health installation roadmap.
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-roadmap  
+> Microsoft doc last updated: 09/10/2026
+
+
+<a name='install-azure-ad-connect'></a>
+
+## Install Microsoft Entra Connect
+
+> [!IMPORTANT]
+> Microsoft doesn't support modifying or operating Microsoft Entra Connect Sync outside of the actions that are formally documented. Any of these actions might result in an inconsistent or unsupported state of Microsoft Entra Connect Sync. As a result, Microsoft can't provide technical support for such deployments.
+
+You can find the download for Microsoft Entra Connect on [Microsoft Download Center](https://entra.microsoft.com/#view/Microsoft_AAD_Connect_Provisioning/AADConnectMenuBlade/~/GetStarted).
+
+| Solution | Scenario |
+| --- | --- |
+| Before you start - [Hardware and prerequisites](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-prerequisites) |<li>Steps to complete before you start to install Microsoft Entra Connect.</li> |
+| [Express settings](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-express) |<li>If you have a single forest AD, then this is the recommended option to use.</li> <li>User sign in with the same password using password synchronization.</li> |
+| [Customized settings](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-custom) |<li>Used when you have multiple forests. Supports many on-premises [topologies](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/plan-connect-topologies).</li> <li>Customize your sign-in option, such as pass-through authentication, ADFS for federation or use a 3rd party identity provider.</li> <li>Customize synchronization features, such as filtering and writeback.</li> |
+| [Upgrade from DirSync](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-dirsync-upgrade-get-started) |<li>Used when you have an existing DirSync server already running.</li> |
+| [Upgrade from Azure AD Sync or Microsoft Entra Connect](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-upgrade-previous-version) |<li>There are several different methods depending on your preference.</li> |
+
+[After installation](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-post-installation), you should verify it's working as expected and assign licenses to the users.
+
+<a name='next-steps-to-install-azure-ad-connect'></a>
+
+### Next steps to Install Microsoft Entra Connect
+|Topic |Link|  
+| --- | --- |
+|Download Microsoft Entra Connect | [Download Microsoft Entra Connect](https://entra.microsoft.com/#view/Microsoft_AAD_Connect_Provisioning/AADConnectMenuBlade/~/GetStarted)|
+|Install using Express settings | [Express installation of Microsoft Entra Connect](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-express)|
+|Install using Customized settings | [Custom installation of Microsoft Entra Connect](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-custom)|
+|Upgrade from DirSync | [Upgrade from Azure AD Sync tool (DirSync)](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-dirsync-upgrade-get-started)|
+|After installation | [Verify the installation and assign licenses](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-post-installation)|
+
+<a name='learn-more-about-install-azure-ad-connect'></a>
+
+### Learn more about Install Microsoft Entra Connect
+You also want to prepare for [operational](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-staging-server) concerns. You might want to have a stand-by server so you easily can fail over if there's a [disaster](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-staging-server#disaster-recovery). If you plan to make frequent configuration changes, you should plan for a [staging mode](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-staging-server) server.
+
+|Topic |Link|  
+| --- | --- |
+|Supported topologies | [Topologies for Microsoft Entra Connect](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/plan-connect-topologies)|
+|Design concepts | [Microsoft Entra Connect design concepts](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/plan-connect-design-concepts)|
+|Accounts used for installation | [More about Microsoft Entra Connect credentials and permissions](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/reference-connect-accounts-permissions)|
+|Operational planning | [Microsoft Entra Connect Sync: Operational tasks and considerations](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-staging-server)|
+|User sign-in options | [Microsoft Entra Connect User sign-in options](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/plan-connect-user-signin)|
+
+## Configure sync features
+Microsoft Entra Connect comes with several features you can optionally turn on or are enabled by default. Some features might sometimes require more configuration in certain scenarios and topologies.
+
+[Filtering](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-configure-filtering) is used when you want to limit which objects are synchronized to Microsoft Entra ID. By default all users, contacts, groups, and Windows 10 computers are synchronized. You can change the filtering based on domains, OUs, or attributes.
+
+[Password hash synchronization](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-password-hash-synchronization) synchronizes the password hash in Active Directory to Microsoft Entra ID. The  end-user can use the same password on-premises and in the cloud but only manage it in one location. Since it uses your on-premises Active Directory as the authority, you can also use your own password policy.
+
+[Password writeback](https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr) allows your users to change and reset their passwords in the cloud and have your on-premises password policy applied.
+
+[Device writeback](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-device-writeback) allows a device registered in Microsoft Entra ID to be written back to on-premises Active Directory so it can be used for Conditional Access.
+
+The [prevent accidental deletes](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-feature-prevent-accidental-deletes) feature is turned on by default and protects your cloud directory from numerous deletes at the same time. By default it allows 500 deletes per run. You can change this setting depending on your organization size.
+
+[Automatic upgrade](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-automatic-upgrade) is enabled by default for express settings installations and ensures your Microsoft Entra Connect is always up to date with the latest release.
+
+### Next steps to configure sync features
+|Topic |Link|  
+| --- | --- |
+|Configure filtering | [Microsoft Entra Connect Sync: Configure filtering](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-configure-filtering)|
+|Password hash synchronization | [Password hash synchronization](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-password-hash-synchronization)|
+|Pass-through Authentication | [Pass-through authentication](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-pta)
+|Password writeback | [Getting started with password management](https://learn.microsoft.com/en-us/entra/identity/authentication/tutorial-enable-sspr)|
+|Device writeback | [Enabling device writeback in Microsoft Entra Connect](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-device-writeback)|
+|Prevent accidental deletes | [Microsoft Entra Connect Sync: Prevent accidental deletes](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-feature-prevent-accidental-deletes)|
+|Automatic upgrade | [Microsoft Entra Connect: Automatic upgrade](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-automatic-upgrade)|
+
+<a name='customize-azure-ad-connect-sync'></a>
+
+## Customize Microsoft Entra Connect Sync
+Microsoft Entra Connect Sync comes with a default configuration that is intended to work for most customers and topologies. But there are always situations where the default configuration doesn't work and must be adjusted. It's supported to make changes as documented in this section and linked topics.
+
+If you haven't worked with a synchronization topology before you want to start to understand the basics and the terms used as described in the [technical concepts](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-technical-concepts). Even if some things are similar, a lot has changed as well.
+
+The [default configuration](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/concept-azure-ad-connect-sync-default-configuration) assumes there might be more than one forest in the configuration. In those topologies, a user object might be represented as a contact in another forest. The user might also have a linked mailbox in another resource forest. The behavior of the default configuration is described in [users and contacts](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/concept-azure-ad-connect-sync-user-and-contacts).
+
+The configuration model in sync is called [declarative provisioning](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/concept-azure-ad-connect-sync-declarative-provisioning-expressions). The advanced attribute flows are using [functions](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/reference-connect-sync-functions-reference) to express attribute transformations. You can see and examine the entire configuration using tools which comes with Microsoft Entra Connect. If you need to make configuration changes, make sure you follow the [best practices](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-best-practices-changing-default-configuration) so it's easier to adopt new releases.
+
+<a name='next-steps-to-customize-azure-ad-connect-sync'></a>
+
+### Next steps to customize Microsoft Entra Connect Sync
+|Topic |Link|  
+| --- | --- |
+|All Microsoft Entra Connect Sync articles | [Microsoft Entra Connect Sync](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-whatis)|
+|Technical concepts | [Microsoft Entra Connect Sync: Technical Concepts](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-technical-concepts)|
+|Understanding the default configuration | [Microsoft Entra Connect Sync: Understanding the default configuration](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/concept-azure-ad-connect-sync-default-configuration)|
+|Understanding users and contacts | [Microsoft Entra Connect Sync: Understanding Users and Contacts](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/concept-azure-ad-connect-sync-user-and-contacts)|
+|Declarative provisioning | [Microsoft Entra Connect Sync: Understanding Declarative Provisioning Expressions](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/concept-azure-ad-connect-sync-declarative-provisioning-expressions)|
+|Change the default configuration | [Best practices for changing the default configuration](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-best-practices-changing-default-configuration)|
+
+## Configure federation features
+
+Microsoft Entra Connect provides several features that simplify federating with Microsoft Entra ID using AD FS and managing your federation trust. Microsoft Entra Connect supports AD FS on Windows Server 2012R2 or later.
+
+[Update TLS/SSL certificate of AD FS farm](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-ssl-update) even if you are not using Microsoft Entra Connect to manage your federation trust.
+
+[Add an AD FS server](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-management#addadfsserver) to your farm to expand the farm as required.
+
+[Repair the trust](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-management#repairthetrust) with Microsoft Entra ID in a few simple clicks.
+
+ADFS can be configured to support [multiple domains](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-multiple-domains). For example, you might have multiple top domains you need to use for federation.
+
+If your ADFS server isn't configured to update certificates from Microsoft Entra ID automatically, or if you use a non-ADFS solution, then you'll be notified when you have to [update certificates](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-o365-certs).
+
+### Next steps to configure federation features
+|Topic |Link|  
+| --- | --- |
+|All AD FS articles | [Microsoft Entra Connect and federation](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-whatis)|
+|Configure ADFS with subdomains | [Multiple Domain Support for Federating with Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-multiple-domains)|
+|Manage AD FS farm | [AD FS management and customization with Microsoft Entra Connect](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-management)|
+|Manually updating federation certificates | [Renewing Federation Certificates for Microsoft 365 and Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-o365-certs)|
+
+<a name='get-started-with-azure-ad-connect-health'></a>
+
+## Get started with Microsoft Entra Connect Health
+To get started with Microsoft Entra Connect Health, use the following steps:
+
+1. [Get Microsoft Entra ID P1 or P2](https://learn.microsoft.com/en-us/entra/fundamentals/get-started-premium) or [start a trial](https://azure.microsoft.com/trial/get-started-active-directory/).
+2. [Download and install Microsoft Entra Connect Health Agents](#download-and-install-azure-ad-connect-health-agent) on your identity servers.
+3. Open [Microsoft Entra Connect Health](https://aka.ms/aadconnecthealth) in the Microsoft Entra admin center.
+
+> [!NOTE]
+> Before monitoring data appears in Microsoft Entra Connect Health, install the Microsoft Entra Connect Health agents on the targeted servers.
+>
+>
+
+<a name='download-and-install-azure-ad-connect-health-agent'></a>
+
+## Download and install Microsoft Entra Connect Health Agent
+* Make sure that you [satisfy the prerequisites](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-health-agent-install#prerequisites) for Microsoft Entra Connect Health.
+* Get started using Microsoft Entra Connect Health for AD FS
+    * [Download Microsoft Entra Connect Health Agent for AD FS.](https://www.microsoft.com/en-us/download/details.aspx?id=108777)
+    * [See the installation instructions](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-health-agent-install#install-the-agent-for-ad-fs).
+* Get started using Microsoft Entra Connect Health for sync
+    * [Download and install the latest version of Microsoft Entra Connect](https://entra.microsoft.com/#view/Microsoft_AAD_Connect_Provisioning/AADConnectMenuBlade/~/GetStarted). The Health Agent for sync is installed as part of the Microsoft Entra Connect installation (version 1.0.9125.0 or higher).
+* Get started using Microsoft Entra Connect Health for AD DS
+    * [Download Microsoft Entra Connect Health Agent for AD DS](https://www.microsoft.com/en-us/download/details.aspx?id=108777).
+    * [See the installation instructions](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-health-agent-install#install-the-agent-for-azure-ad-ds).
+
+<a name='azure-ad-connect-health-portal'></a>
+
+## Microsoft Entra Connect Health in the Microsoft Entra admin center
+
+The [Microsoft Entra Connect Health](https://aka.ms/aadconnecthealth) experience provides a left menu for monitoring Microsoft Entra Connect Sync, AD FS, and AD DS. After you deploy the agents, the service automatically identifies the monitored service instances.
+
+> [!NOTE]
+> For licensing information, see the [Microsoft Entra Connect Health FAQ](reference-connect-health-faq.yml) or the [Microsoft Entra pricing page](https://aka.ms/aadpricing).
+
+The menu includes the following options:
+
+* **Quick start**: View what's new, download the agents and Microsoft Entra Connect, open documentation, or provide feedback.
+* **Sync errors**: Review synchronization error categories and individual error details. For supported duplicate-attribute scenarios, you can start the guided **Fix Synchronization Error** experience.
+* **Sync services**: View monitored Microsoft Entra Connect Sync service instances. Select a service to review its servers, alerts, synchronization errors, and settings. For details, see [Use Microsoft Entra Connect Health for Sync](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-health-sync).
+* **AD FS services**: View monitored AD FS farms. Select a service to review its servers, properties, alerts, performance monitoring, usage analytics, and security reports. For details, see [Use Microsoft Entra Connect Health with AD FS](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-health-adfs).
+* **AD DS services**: View monitored AD DS forests. Select a service to review its domain controllers, replication status, alerts, and performance monitoring. For details, see [Use Microsoft Entra Connect Health with AD DS](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-health-adds).
+* **Settings**: Configure tenant-level Microsoft Entra Connect Health settings.
+* **Role based access control (IAM)**: Manage access to Microsoft Entra Connect Health data.
+* **Troubleshoot** and **New support request**: Diagnose issues or contact Microsoft support.
+
+## Next Steps
+
+- [Hardware and prerequisites](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-prerequisites) 
+- [Express settings](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-express)
+- [Customized settings](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-install-custom)
+- [Password hash synchronization](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-password-hash-synchronization)
+- [Pass-through authentication](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-pta)
+- [Microsoft Entra Connect and federation](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-fed-whatis)
+- [Install Microsoft Entra Connect Health agents](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-health-agent-install) 
+- [Microsoft Entra Connect Sync](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-whatis)

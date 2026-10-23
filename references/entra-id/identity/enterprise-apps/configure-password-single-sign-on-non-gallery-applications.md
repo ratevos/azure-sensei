@@ -1,0 +1,65 @@
+# Add password-based single sign-on to an application
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-password-single-sign-on-non-gallery-applications  
+> Microsoft doc last updated: 06/20/2025
+
+
+This article shows you how to set up password-based single sign-on (SSO) in Microsoft Entra ID. With password-based SSO, a user signs in to the application with a username and password the first time they sign in to it. After the first sign-on, Microsoft Entra ID sends the username and password to the application. 
+
+Password-based SSO uses the existing authentication process provided by the application. When you enable password-based SSO for an application, Microsoft Entra ID collects and securely stores usernames and passwords for the application. User credentials are stored in an encrypted state in the directory. Password-based SSO is supported for any cloud-based application that has an HTML-based sign-in page.
+
+Choose password-based SSO when:
+- An application doesn't support the Security Assertion Markup Language (SAML) SSO protocol.
+- An application authenticates with a username and password instead of access tokens and headers.
+
+The configuration page for password-based SSO is simple. It includes only the URL of the sign-on page that the application uses. This string must be the page that includes the username input field.
+
+## Prerequisites
+
+To configure password-based SSO in your Microsoft Entra tenant, you need:
+-	An Azure account with an active subscription. If you don't already have one, you can [create an account for free](https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn)
+-   Application Administrator, Cloud Application Administrator, or owner of the service principal.
+-	An application that supports password-based SSO.
+
+## Configure password-based single sign-on
+
+1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) as at least a [Cloud Application Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#cloud-application-administrator). 
+1. Browse to **Entra ID** > **Enterprise apps** > **All applications**.
+1. Enter the name of the existing application in the search box, and then select the application from the search results.
+1. Select **Single sign-on** and then select **Password-based**.
+1. Enter the URL for the sign-in page of the application.
+1. Select **Save**. 
+
+Microsoft Entra ID parses the HTML of the sign-in page for username and password input fields. If the attempt succeeds, you're signed in. Your next step is to [Assign users or groups](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/add-application-portal-assign-users) to the application. 
+
+After assigning users and groups, you can provide credentials to be used for a user when they sign in to the application. 
+
+1. Select **Users and groups**, select the checkbox for the user's or group's row, and then select **Update Credentials**. 
+1. Enter the username and password to be used for the user or group. If you don't, users are prompted to enter the credentials themselves upon launch.
+
+## Manual configuration
+
+If the parsing attempt by Microsoft Entra ID fails, you can configure sign-on manually.
+
+1. Select **Configure {application name} Password Single Sign-on Settings** to display the **Configure sign-on** page.
+1. Select **Manually detect sign-in fields**. More instructions that describe manual detection of sign-in fields appear.
+1. Select **Capture sign-in fields**. A capture status page opens in a new tab, showing the message metadata capture is currently in progress.
+1. If the **My Apps Extension Required** box appears in a new tab, select **Install Now** to install the My Apps Secure Sign-in Extension browser extension. (The browser extension requires Microsoft Edge or Chrome.) Then install, launch, and enable the extension, and refresh the capture status page. The browser extension then opens another tab that displays the entered URL.
+1. In the tab with the entered URL, go through the sign-in process. Fill in the username and password fields, and try to sign in. (You don't have to provide the correct password.) A prompt asks you to save the captured sign-in fields.
+1. Select **OK**. The browser extension updates the capture status page with the message **Metadata has been updated for the application**. The browser tab closes.
+1. In the Microsoft Entra ID Configure sign-on page, select **Ok, I was able to sign-in to the app successfully**.
+1. Select **OK**.
+
+## Limitations
+
+For password-based SSO, the end user’s browsers can be:
+
+- Internet Explorer 8, 9, 10, 11--on Windows 7 or later (limited support)
+- Microsoft Edge on Windows 10 Anniversary Edition or later
+- Chrome--on Windows 7 or later, and on macOS X or later
+
+Users might only have a maximum of [48 credentials](https://learn.microsoft.com/en-us/entra/identity/users/directory-service-limits-restrictions) configured for applications utilizing password-based single sign-on. 
+
+## Related content
+
+- [Manage access to apps](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/what-is-access-management)

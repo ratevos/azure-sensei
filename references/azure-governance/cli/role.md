@@ -1,0 +1,8 @@
+# az role
+
+> Source: https://learn.microsoft.com/en-us/cli/azure/role  
+> Microsoft doc last updated: unknown
+
+Manage Azure role-based access control (Azure RBAC).
+
+Subgroups and commands: `az_role_assignment`, `az_role_assignment_create`, `az_role_assignment_delete`, `az_role_assignment_list`, `az_role_assignment_list-changelogs`, `az_role_assignment_update`, `az_role_definition`, `az_role_definition_create`, `az_role_definition_delete`, `az_role_definition_list`, `az_role_definition_show`, `az_role_definition_update`, `az_role_deny-assignment`, `az_role_deny-assignment_create`, `az_role_deny-assignment_delete`, `az_role_deny-assignment_list`, `az_role_deny-assignment_show`

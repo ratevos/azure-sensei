@@ -1,0 +1,47 @@
+# unifiedRoleManagementPolicyRule resource type
+
+> Source: https://learn.microsoft.com/en-us/graph/api/resources/unifiedrolemanagementpolicyrule?view=graph-rest-1.0  
+> Microsoft doc last updated: 09/16/2026
+
+
+Namespace: microsoft.graph
+
+An abstract type that defines the rules or settings associated with role management policies. This abstract type is inherited by the following resources that define the various types of rules and their settings associated with role management policies.
++ [unifiedRoleManagementPolicyApprovalRule](unifiedrolemanagementpolicyapprovalrule.md)
++ [unifiedRoleManagementPolicyAuthenticationContextRule](unifiedrolemanagementpolicyauthenticationcontextrule.md)
++ [unifiedRoleManagementPolicyCustomExtensionRule](../resources/unifiedrolemanagementpolicycustomextensionrule.md)
++ [unifiedRoleManagementPolicyEnablementRule](unifiedrolemanagementpolicyenablementrule.md)
++ [unifiedRoleManagementPolicyExpirationRule](unifiedrolemanagementpolicyexpirationrule.md)
++ [unifiedRoleManagementPolicyNotificationRule](unifiedrolemanagementpolicynotificationrule.md)
+
+Inherits from [entity](../resources/entity.md).
+
+## Methods
+
+|Method|Return type|Description|
+|:---|:---|:---|
+|[List](../api/unifiedrolemanagementpolicy-list-rules.md)|[unifiedRoleManagementPolicyRule](../resources/unifiedrolemanagementpolicyrule.md) collection|Get a list of the [unifiedRoleManagementPolicyRule](../resources/unifiedrolemanagementpolicyrule.md) objects and their properties.|
+|[Get](../api/unifiedrolemanagementpolicyrule-get.md)|[unifiedRoleManagementPolicyRule](../resources/unifiedrolemanagementpolicyrule.md)|Read the properties and relationships of an [unifiedRoleManagementPolicyRule](../resources/unifiedrolemanagementpolicyrule.md) object.|
+|[Update](../api/unifiedrolemanagementpolicyrule-update.md)|[unifiedRoleManagementPolicyRule](../resources/unifiedrolemanagementpolicyrule.md)|Update the properties of an [unifiedRoleManagementPolicyRule](../resources/unifiedrolemanagementpolicyrule.md) object.|
+
+## Properties
+|Property|Type|Description|
+|:---|:---|:---|
+|id|String|Identifier for the rule. Inherited from [entity](../resources/entity.md). Read-only.|
+|target|[unifiedRoleManagementPolicyRuleTarget](../resources/unifiedrolemanagementpolicyruletarget.md)| Defines details of scope that's targeted by role management policy rule. The details can include the principal type, the role assignment type, and actions affecting a role. Supports `$filter` (`eq`, `ne`).|
+
+## Relationships
+None.
+
+## JSON representation
+The following JSON representation shows the resource type.
+
+``` json
+{
+  "@odata.type": "#microsoft.graph.unifiedRoleManagementPolicyRule",
+  "id": "String (identifier)",
+  "target": {
+    "@odata.type": "microsoft.graph.unifiedRoleManagementPolicyRuleTarget"
+  }
+}
+```

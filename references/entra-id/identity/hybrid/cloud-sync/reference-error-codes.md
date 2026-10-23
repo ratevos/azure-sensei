@@ -1,0 +1,45 @@
+# Microsoft Entra Cloud Sync error codes and descriptions
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/reference-error-codes  
+> Microsoft doc last updated: 08/21/2026
+
+The following is a list of error codes and their description
+
+## Error codes
+
+|Error code|Details|Scenario|Resolution|
+|-----|-----|-----|-----|
+|TimeOut|Error Message: We've detected a request timeout error when contacting the on-premises agent and synchronizing your configuration. For additional issues related to your cloud sync agent, please see our troubleshooting guidance.|Request to HIS timed out. Current Timeout value is 10 minutes.|See our [troubleshooting guidance](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-troubleshoot)|
+|HybridSynchronizationActiveDirectoryInternalServerError|Error Message: We were unable to process this request at this point. If this issue persists, please contact support and provide the following job identifier: AD2AADProvisioning.30b500eaf9c643b2b78804e80c1421fe.5c291d3c-d29f-4570-9d6b-f0c2fa3d5926. Additional details: Processing of the HTTP request resulted in an exception. |Couldn't process the parameters received in SCIM request to a Search request.|Please see the HTTP response returned by the 'Response' property of this exception for details.|
+|HybridIdentityServiceNoAgentsAssigned|Error Message: We're unable to find an active agent for the domain you're trying to sync. Please check to see if the agents have been removed. If so, re-install the agent again.|There are no agents running. Probably agents have been removed. Register a new agent.|"In this case, you won't see any agent assigned to the domain in portal.|
+|HybridIdentityServiceNoActiveAgents|Error Message: We're unable to find an active agent for the domain you're trying to sync. Please check to see if the agent is running by going to the server, where the agent is installed, and check to see if **Microsoft Entra Connect cloud sync agent** under Services is running.|"Agents aren't listening to the ServiceBus endpoint. [The agent is behind a firewall that doesn't allow connections to service bus](https://learn.microsoft.com/en-us/entra/identity/app-proxy/application-proxy-configure-connectors-with-proxy-servers#use-the-outbound-proxy-server)|
+|HybridIdentityServiceInvalidResource|Error Message: We were unable to process this request at this point. If this issue persists, please contact support and provide the following job identifier: AD2AADProvisioning.3a2a0d8418f34f54a03da5b70b1f7b0c.d583d090-9cd3-4d0a-aee6-8d666658c3e9. Additional details: There seems to be an issue with your cloud sync setup. Please re-register your cloud sync agent on your on-premises AD domain and restart configuration from portal.|The resource name must be set so HIS knows which agent to contact.|Please re-register your cloud sync agent on your on-premises AD domain and restart configuration from portal.|
+|HybridIdentityServiceAgentSignalingError|Error Message: We were unable to process this request at this point. If this issue persists, please contact support and provide the following job identifier: AD2AADProvisioning.92d2e8750f37407fa2301c9e52ad7e9b.efb835ef-62e8-42e3-b495-18d5272eb3f9. Additional details: We were unable to process this request at this point. If this issue persists, please contact support with Job ID (from status pane of your configuration).|Service Bus isn't able to send a message to the agent. Could be an outage in service bus, or the agent isn't responsive.|If this issue persists, please contact support with Job ID (from status pane of your configuration).|
+|AzureDirectoryServiceServerBusy|Error Message: An error occurred. Error Code: 81. Error Description: Microsoft Entra ID is currently busy. This operation will be retried automatically. If this issue persists for more than 24 hours, contact Technical Support. Tracking ID: 8a4ab3b5-3664-4278-ab64-9cff37fd3f4f Server Name:|Microsoft Entra ID is currently busy.|If this issue persists for more than 24 hours, contact Technical Support.|
+|AzureActiveDirectoryAuthenticationFailed|Error Message: We were unable to process this request at this point. If this issue persists, please contact support and provide the following job identifier: AD2AADProvisioning.60b943e88f234db2b887f8cb91dee87c.707be0d2-c6a9-405d-a3b9-de87761dc3ac. Additional details: We were unable to process this request at this point. If this issue persists, please contact support with Job ID (from status pane of your configuration). Additional Error Details: UnexpectedError.|Unknown error.|If this issue persists, please contact support with Job ID (from status pane of your configuration).|
+|HybridSynchronizationActiveDirectoryUnexpectedDuplicateEntriesFound|Error Message: An Active Directory query returned multiple objects when one was expected. Clean up duplicate objects in your directory to resolve this issue.|Provisioning is unable to associate the Entra object with a unique object in Active Directory as the LDAP search query returned multiple objects.|If the Group Provisioning to Active Directory job is in quarantine:<br>1. Find groups in Active Directory that have the same value starting with "Group_" in the attribute *msDS-ExternalDirectoryObjectId*. You can use the PowerShell script after this table to find the groups:<br>2. For each set of groups that have the same value, remove the duplicate groups.|
+
+To find groups in Active Directory that have the same value starting with "Group_" in the attribute *msDS-ExternalDirectoryObjectId*, run the following PowerShell script:
+
+```powershell
+$attributeName = "msDS-ExternalDirectoryObjectId"
+$prefix = "Group_"
+$allGroups = Get-ADGroup -LDAPFilter "($attributeName=$prefix*)" -Properties $attributeName
+$duplicateGroups = $allGroups |
+    Group-Object -Property $attributeName |
+    Where-Object { $_.Count -gt 1 }
+if ($duplicateGroups) {
+    foreach ($group in $duplicateGroups) {
+        Write-Host "Value: $($group.Name) (Count: $($group.Count))"
+        $group.Group | Select-Object Name, DistinguishedName, msDS-ExternalDirectoryObjectId | Format-Table -AutoSize
+        Write-Host "----"
+    }
+} else {
+    Write-Host "No duplicate groups found"
+}
+```
+
+## Next steps 
+
+- [What is provisioning?](https://learn.microsoft.com/en-us/entra/identity/hybrid/what-is-provisioning)
+- [What is Microsoft Entra Cloud Sync?](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/what-is-cloud-sync)

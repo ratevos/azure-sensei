@@ -1,0 +1,156 @@
+# Use the Centralized Deployment PowerShell cmdlets to manage add-ins
+
+> Source: https://learn.microsoft.com/en-us/microsoft-365/enterprise/use-the-centralized-deployment-powershell-cmdlets-to-manage-add-ins  
+> Microsoft doc last updated: 02/13/2025
+
+
+As a Microsoft 365 global admin, you can deploy Office Add-ins to users via the Centralized Deployment feature (see [Deploy Office Add-ins in the admin center](https://learn.microsoft.com/en-us/microsoft-365/admin/manage/manage-deployment-of-add-ins). In addition to deploying Office Add-ins via the Microsoft 365 admin center, you can also use Microsoft PowerShell.
+
+> [!IMPORTANT]
+> Microsoft recommends that you use roles with the fewest permissions. This helps improve security for your organization. Global Administrator is a highly privileged role that should be limited to emergency scenarios when you can't use an existing role.
+
+Open a regular Windows PowerShell window and run the following cmdlet to install the module:
+
+```powershell
+Install-Module -Name O365CentralizedAddInDeployment
+```
+Run the following cmdlet to import the module:
+
+```powershell
+ Import-Module -Name O365CentralizedAddInDeployment
+```
+
+## Connect using your admin credentials
+
+Before you can use the Centralized Deployment cmdlets, you need to sign in.
+
+1. Start PowerShell.
+
+2. Connect to PowerShell by using your **Global Admin** credentials. Run the following cmdlet.
+
+  ```powershell
+  Connect-OrganizationAddInService
+  ```
+
+3. In the sign in prompt that opens, select or enter your Microsoft 365 **Global Admin** credentials.
+
+> [!NOTE]
+> For more information about using PowerShell, see [Connect to Microsoft 365 with PowerShell](https://learn.microsoft.com/en-us/microsoft-365/enterprise/connect-to-microsoft-365-powershell).
+
+## Upload an add-in manifest
+
+Run the **New-OrganizationAdd-In** cmdlet to upload an add-in manifest from a path, which can be either a file location or URL. The following example shows a file location for the value of the  _ManifestPath_ parameter.
+
+```powershell
+New-OrganizationAddIn -ManifestPath 'C:\Users\Me\Desktop\taskpane.xml' -Locale 'en-US'
+```
+
+You can also run the **New-OrganizationAdd-In** cmdlet to upload an add-in and assign it to users or groups directly by using the  _Members_ parameter, as shown in the following example. Separate the email addresses of members with a comma.
+
+```powershell
+New-OrganizationAddIn -ManifestPath 'C:\Users\Me\Desktop\taskpane.xml' -Locale 'en-US' -Members  'KathyBonner@contoso.com', 'MaxHargrave@contoso.com'
+```
+
+## Upload an add-in from the Microsoft Marketplace
+
+Run the **New-OrganizationAddIn** cmdlet to upload a manifest from the Microsoft Marketplace.
+
+In the following example, the **New-OrganizationAddIn** cmdlet specifies the AssetId for an add-in for a United States location and content market.
+
+```powershell
+New-OrganizationAddIn -AssetId 'WA104099688' -Locale 'en-US' -ContentMarket 'en-US'
+```
+
+To determine the value for the  _AssetId_ parameter, you can copy it from the URL of the Microsoft Marketplace webpage for the add-in. AssetIds always begin with "WA" followed by a number. For example, in the previous example, the source for the AssetId value of WA104099688 is the Microsoft Marketplace webpage URL for the add-in: [https://store.office.com/en-001/app.aspx?assetid=WA104099688](https://store.office.com/en-001/app.aspx?assetid=WA104099688).
+
+The values for the  _Locale_ parameter and the  _ContentMarket_ parameter are identical and indicate the country/region you're trying to install the add-in from. The format is en-US, fr-FR and so forth.
+
+> [!NOTE]
+> Add-ins uploaded from the Microsoft Marketplace will update automatically within a few days of the latest update being available on the Microsoft Marketplace.
+
+## Get details of an add-in
+
+Run the **Get-OrganizationAddIn** cmdlet as shown below to get details of all add-ins uploaded to the tenant, included an add-in's product ID.
+
+```powershell
+Get-OrganizationAddIn
+```
+
+Run the **Get-OrganizationAddIn** cmdlet with a value for the  _ProductId_ parameter to specify which add-in you want to retrieve details for.
+
+```powershell
+Get-OrganizationAddIn -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122
+```
+
+To get full details of all the add-ins plus the assigned users and groups, pipe the output of the **Get-OrganizationAddIn** cmdlet to the Format-List cmdlet, as shown in the following example.
+
+```powershell
+foreach($G in (Get-organizationAddIn)){Get-OrganizationAddIn -ProductId $G.ProductId | Format-List}
+```
+
+## Turn on or turn off an add-in
+
+To turn off an add-in so users and groups that are assigned to it will no longer have access, run the **Set-OrganizationAddIn** cmdlet with the  _ProductId_ parameter and the  _Enabled_ parameter set to  `$false`, as shown in the following example.
+
+```powershell
+Set-OrganizationAddIn -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122 -Enabled $false
+```
+
+To turn an add-in back on, run the same cmdlet with the  _Enabled_ parameter set to  `$true`.
+
+```powershell
+Set-OrganizationAddIn -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122 -Enabled $true
+```
+
+## Add or remove users from an add-in
+
+To add users and groups to a specific add-in, run the **Set-OrganizationAddInAssignments** cmdlet with the  _ProductId_,  _Add_, and  _Members_ parameters. Separate the email addresses of members with a comma.
+
+```powershell
+Set-OrganizationAddInAssignments -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122 -Add -Members 'KathyBonner@contoso.com','sales@contoso.com'
+```
+
+To remove users and groups, run the same cmdlet using the  _Remove_ parameter.
+
+```powershell
+Set-OrganizationAddInAssignments -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122 -Remove -Members 'KathyBonner@contoso.com','sales@contoso.com'
+```
+
+To assign an add-in to all users on the tenant, run the same cmdlet using the  _AssignToEveryone_ parameter with the value set to  `$true`.
+
+```powershell
+Set-OrganizationAddInAssignments -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122 -AssignToEveryone $true
+```
+
+To not assign an add-in to everyone and revert to the previously assigned users and groups, you can run the same cmdlet and turn off the  _AssignToEveryone_ parameter by setting its value to  `$false`.
+
+```powershell
+Set-OrganizationAddInAssignments -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122 -AssignToEveryone $false
+```
+
+## Update an add-in
+
+To update an add-in from a manifest, run the **Set-OrganizationAddIn** cmdlet with the  _ProductId_,  _ManifestPath_, and  _Locale_ parameters, as shown in the following example.
+
+```powershell
+Set-OrganizationAddIn -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122 -ManifestPath 'C:\Users\Me\Desktop\taskpane.xml' -Locale 'en-US'
+```
+
+> [!NOTE]
+> Add-ins uploaded from the Microsoft Marketplace will update automatically within a few days of the latest update being available on the Microsoft Marketplace.
+
+## Delete an add-in
+
+To delete an add-in, run the **Remove-OrganizationAddIn** cmdlet with the  _ProductId_ parameter, as shown in the following example.
+
+```powershell
+Remove-OrganizationAddIn -ProductId 6a75788e-1c6b-4e9b-b5db-5975a2072122
+```
+
+## Get detailed help for each cmdlet
+
+You can look at detailed help for each cmdlet by using the Get-help cmdlet. For example, the following cmdlet provides detailed information about the Remove-OrganizationAddIn cmdlet.
+
+```powershell
+Get-help Remove-OrganizationAddIn -Full
+```

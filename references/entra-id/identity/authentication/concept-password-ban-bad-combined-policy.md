@@ -1,0 +1,48 @@
+# Combined password policy and check for weak passwords in Microsoft Entra ID
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad-combined-policy  
+> Microsoft doc last updated: 03/04/2025
+
+
+Beginning in October 2021, Microsoft Entra validation for compliance with password policies also includes a check for [known weak passwords](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad) and their variants. 
+This article explains details about the password policy criteria checked by Microsoft Entra ID. 
+
+<a name='azure-ad-password-policies'></a>
+
+## Microsoft Entra password policies
+
+A password policy is applied to all user and admin accounts that are created and managed directly in Microsoft Entra ID. You can [ban weak passwords](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad) and define parameters to [lock out an account](https://learn.microsoft.com/en-us/entra/identity/authentication/howto-password-smart-lockout) after repeated bad password attempts. Other password policy settings can't be modified.
+
+The Microsoft Entra password policy doesn't apply to user accounts synchronized from an on-premises AD DS environment using Microsoft Entra Connect unless you enable CloudPasswordPolicyForPasswordSyncedUsersEnabled. If CloudPasswordPolicyForPasswordSyncedUsersEnabled and password writeback are enabled, Microsoft Entra password expiration policy applies, but the on-premises password policy takes precedence for length, complexity, and so on.
+
+The following Microsoft Entra password policy requirements apply for all passwords that are created, changed, or reset in Microsoft Entra ID. Requirements are applied during user provisioning, password change, and password reset flows. You can't change these settings except as noted.
+
+| Property | Requirements |
+| --- | --- |
+| Characters allowed |Uppercase characters (A - Z)<br>Lowercase characters (a - z)<br>Numbers (0 - 9)<br>Symbols:<br>- @ # $ % ^ & * - _ ! + = [ ] { } &#124; \ : ' , . ? / \` ~ " ( ) ; < ><br>- blank space |
+| Characters not allowed | Unicode characters.<br> Note: For Microsoft Entra External ID tenants, Unicode characters are allowed if the user is created by using Microsoft Graph API or Self-Service Sign-Up. |
+| Password length |Passwords require<br>- A minimum of 8 characters<br>- A maximum of 256 characters</li> |
+| Password complexity |Passwords require three out of four of the following categories:<br>- Uppercase characters<br>- Lowercase characters<br>- Numbers <br>- Symbols<br> Note: Password complexity check isn't required for Education tenants. |
+| Password not recently used | When a user changes their password, the new password shouldn't be the same as the current password. |
+| Password isn't banned by [Microsoft Entra Password Protection](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad) | The password can't be on the global list of banned passwords for Microsoft Entra Password Protection, or on the customizable list of banned passwords specific to your organization. |
+
+## Password expiration policies
+
+Password expiration policies are unchanged but they're included in this article for completeness. Those assigned at least the [User Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#user-administrator) role can use the [Microsoft Graph PowerShell cmdlets](https://learn.microsoft.com/en-us/powershell/microsoftgraph/) to set user passwords not to expire.
+
+> [!NOTE]
+> By default, only passwords for user accounts that aren't synchronized through Microsoft Entra Connect can be configured to not expire. For more information about directory synchronization, see [Connect AD with Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-password-hash-synchronization#password-expiration-policy).
+
+You can also use PowerShell to remove the never-expires configuration, or to see user passwords that are set to never expire.
+
+The following expiration requirements apply to other providers that use Microsoft Entra ID for identity and directory services, such as Microsoft Intune and Microsoft 365. 
+
+| Property | Requirements |
+| --- | --- |
+| Password expiry duration (Maximum password age) |Default value: **90** days.<br>The value is configurable by using the [Update-MgDomain](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.identity.directorymanagement/update-mgdomain) cmdlet from the Microsoft Graph PowerShell module. |
+| Password expiry (Let passwords never expire) |Default value: **false** (indicates that password's have an expiration date).<br>The value can be configured for individual user accounts by using the [Update-MgUser](https://learn.microsoft.com/en-us/powershell/module/microsoft.graph.users/update-mguser) cmdlet.|
+
+## Next steps
+
+- [Password policies and account restrictions in Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-sspr-policy)
+- [Eliminate bad passwords using Microsoft Entra Password Protection](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-password-ban-bad)

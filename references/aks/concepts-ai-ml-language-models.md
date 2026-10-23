@@ -1,0 +1,115 @@
+# Concepts - Small and Large Language Models
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/concepts-ai-ml-language-models  
+> Microsoft doc last updated: 09/14/2026
+
+
+In this article, you learn about small and large language models, including when to use them and how you can use them with your AI and machine learning workflows on Azure Kubernetes Service (AKS).
+
+For most production AI and machine learning workloads on AKS, AKS Automatic is the recommended default. AKS Automatic provides production-ready defaults for scaling, security, networking, and operations so teams can focus on model onboarding, evaluation, and application behavior instead of cluster management.
+
+## What are language models?
+
+Language models are powerful machine learning models used for natural language processing (NLP) tasks, such as text generation and sentiment analysis. These models represent natural language based on the probability of words or sequences of words occurring in a given context.
+
+_Conventional language models_ have been used in supervised settings for research purposes where the models are trained on well-labeled text datasets for specific tasks. _Pre-trained language models_ offer an accessible way to get started with AI and have become more widely used in recent years. These models are trained on large-scale text corpora from the internet using deep neural networks and can be fine-tuned on smaller datasets for specific tasks.
+
+The size of a language model is determined by its number of parameters, or _weights_, that determine how the model processes input data and generates output. Parameters are learned during the training process by adjusting the weights within layers of the model to minimize the difference between the model's predictions and the actual data. The more parameters a model has, the more complex and expressive it is, but also the more computationally expensive it is to train and use.
+
+In general, **small language models** have _fewer than 10 billion parameters_, and **large language models** have _more than 10 billion parameters_. For example, the Microsoft Phi-4 model family includes versions with different sizes: Phi-4-mini (3.8 billion parameters) and Phi-4 (14 billion parameters).
+
+## When to use small language models
+
+### Advantages
+
+Small language models are a good choice if you want models that are:
+
+- **Faster and more cost-effective to train and run**: They require less data and compute power.
+- **Easy to deploy and maintain**: They have smaller storage and memory footprints.
+- **Less prone to overfitting**, which is when a model learns the noise or specific patterns of the training data and fails to generalize new data.
+- **Interpretable and explainable**: They have fewer parameters and components to understand and analyze.
+
+### Use cases
+
+Small language models are suitable for use cases that require:
+
+- **Limited data or resources**, and you need a quick and simple solution.
+- **Well-defined or narrow tasks**, and you don't need much creativity in the output.
+- **High-precision and low-recall tasks**, and you value accuracy and quality over coverage and quantity.
+- **Sensitive or regulated tasks**, and you need to ensure the transparency and accountability of the model.
+
+The following table lists some popular, high-performance small language models:
+
+| Model family | Model sizes (Number of parameters) | Software license |
+| ------------ | ---------------------------------- | ---------------- |
+| Microsoft Phi-4 | Phi-4-mini (3.8 billion) | MIT license |
+| Google Gemma | Gemma-4-E2B (2 billion), Gemma-4-E4B (4 billion) | Apache 2.0 license |
+
+## When to use large language models
+
+### Advantages
+
+Large language models are a good choice if you want models that are:
+
+- **Powerful and expressive**: They can capture more complex patterns and relationships in the data.
+- **General and adaptable**: They can handle a wider range of tasks and transfer knowledge across domains.
+- **Robust and consistent**: They can handle noisy or incomplete inputs and avoid common errors and biases.
+
+### Use cases
+
+Large language models are suitable for use cases that require:
+
+- **Abundant data and resources**, and you have the budget to build and maintain a complex solution.
+- **Low-precision and high-recall tasks**, and you value coverage and quantity over accuracy and quality.
+- **Challenging or exploratory tasks**, and you want to leverage the model's capacity to learn and adapt.
+
+The following table lists some popular, high-performance large language models:
+
+| Model family | Model sizes (Number of parameters) | Software license |
+| ------------ | ---------------------------------- | ---------------- |
+| Microsoft Phi-4 | Phi-4 (14 billion) | MIT license |
+| Google Gemma | Gemma-4-31B (31 billion) | Apache 2.0 license |
+
+## Experiment with small and large language models on AKS
+
+Kubernetes AI Toolchain Operator (KAITO) is an open-source operator that automates small and large language model deployments in Kubernetes clusters. The KAITO add-on for AKS simplifies onboarding and reduces the time-to-inference for open-source models on your AKS clusters. The add-on automatically provisions right-sized GPU nodes and sets up the associated inference server as an endpoint server to your chosen model.
+
+For more information, see [Deploy an AI model on AKS with the AI toolchain operator][ai-toolchain-operator]. To get started with a range of supported small and large language models for your inference workflows, see the [KAITO model GitHub repository][kaito-repo].
+
+> [!IMPORTANT]
+>
+> Open-source software is mentioned throughout AKS documentation and samples. Software that you deploy is excluded from AKS service-level agreements, limited warranty, and Azure support. As you use open-source technology alongside AKS, consult the support options available from the respective communities and project maintainers to develop a plan.
+>
+> Microsoft takes responsibility for building the open-source packages that we deploy on AKS. That responsibility includes having complete ownership of the build, scan, sign, validate, and hotfix process, along with control over the binaries in container images. For more information, see [Vulnerability management for AKS](https://learn.microsoft.com/en-us/azure/aks/concepts-vulnerability-management#aks-container-images) and [AKS support coverage](https://learn.microsoft.com/en-us/azure/aks/support-policies#aks-support-coverage).
+
+## AKS platform guidance for production AI and machine learning workloads
+
+For most production AI and machine learning workloads, use AKS Automatic as your default starting point.
+
+AKS Automatic helps reduce operational overhead with:
+
+- Production-ready default cluster configuration.
+- Built-in node management and scaling behavior.
+- Built-in security and policy safeguards.
+- Automatic patching and upgrades.
+- Pod readiness and uptime SLA coverage.
+
+Use AKS Standard when your workload requires advanced cluster customization beyond default AKS Automatic settings.
+
+For more information, see [Introduction to Azure Kubernetes Service (AKS) Automatic](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic).
+
+## Related content
+
+To learn more about containerized AI and machine learning workloads on AKS, see the following articles:
+
+- [Introduction to Azure Kubernetes Service (AKS) Automatic](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic)
+- [Create an Azure Kubernetes Service (AKS) Automatic cluster](https://learn.microsoft.com/en-us/azure/aks/automatic/quick-automatic-managed-network)
+- [Use KAITO to forecast energy usage with intelligent apps][forecast-energy-usage]
+- [Concepts - Fine-tuning language models][fine-tune-language-models]
+- [Build and deploy data and machine learning pipelines with Flyte on AKS][flyte-aks]
+
+[ai-toolchain-operator]: https://learn.microsoft.com/en-us/azure/aks/ai-toolchain-operator
+[forecast-energy-usage]: https://azure.github.io/Cloud-Native/60DaysOfIA/forecasting-energy-usage-with-intelligent-apps-1/
+[flyte-aks]: https://learn.microsoft.com/en-us/azure/aks/use-flyte
+[kaito-repo]: https://kaito-project.github.io/kaito/docs/presets
+[fine-tune-language-models]: https://learn.microsoft.com/en-us/azure/aks/concepts-fine-tune-language-models

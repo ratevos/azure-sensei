@@ -1,0 +1,219 @@
+# Microsoft Entra: least-privileged role by task
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/delegate-by-task  
+> Generated from official Microsoft docs by scripts/build_permissions.py
+
+Microsoft's own mapping of Entra admin tasks to the least-privileged built-in role. Format: [Area] Task → **least-privileged role** (also: other roles that can do it).
+
+- [Application proxy] Configure application proxy app → **Application Administrator**
+- [Application proxy] Configure connector group properties → **Application Administrator**
+- [Application proxy] Create application registration when ability is disabled for all users → **Application Developer** (also: Cloud Application Administrator, Application Administrator)
+- [Application proxy] Create connector group → **Application Administrator**
+- [Application proxy] Delete connector group → **Application Administrator**
+- [Application proxy] Disable application proxy → **Application Administrator**
+- [Application proxy] Download connector service → **Application Administrator**
+- [Application proxy] Read all configuration → **Application Administrator**
+- [External Identities/Azure AD B2C] Create Azure AD B2C directories → **All non-guest users**
+- [External Identities/Azure AD B2C] Create enterprise applications → **Cloud Application Administrator** (also: Application Administrator)
+- [External Identities/Azure AD B2C] Create, read, update, and delete B2C policies → **B2C IEF Policy Administrator**
+- [External Identities/Azure AD B2C] Create, read, update, and delete identity providers → **External Identity Provider Administrator**
+- [External Identities/Azure AD B2C] Create, read, update, and delete password reset user flows → **External ID User Flow Administrator**
+- [External Identities/Azure AD B2C] Create, read, update, and delete profile editing user flows → **External ID User Flow Administrator**
+- [External Identities/Azure AD B2C] Create, read, update, and delete sign-in user flows → **External ID User Flow Administrator**
+- [External Identities/Azure AD B2C] Create, read, update, and delete sign-up user flow → **External ID User Flow Administrator**
+- [External Identities/Azure AD B2C] Create, read, update, and delete user attributes → **External ID User Flow Attribute Administrator**
+- [External Identities/Azure AD B2C] Create, read, update, and delete users → **User Administrator**
+- [External Identities/Azure AD B2C] Configure B2B external collaboration settings - Guest user access → **Privileged Role Administrator**
+- [External Identities/Azure AD B2C] Configure B2B external collaboration settings - Guest invite settings → **Guest Inviter** (also: External ID User Flow Administrator)
+- [External Identities/Azure AD B2C] Configure B2B external collaboration settings - External user leave settings → **External Identity Provider Administrator**
+- [External Identities/Azure AD B2C] Configure B2B external collaboration settings - Collaboration restrictions → **Global Administrator**
+- [External Identities/Azure AD B2C] Read all configuration → **Global Reader**
+- [External Identities/Azure AD B2C] Read B2C audit logs → **Global Reader**
+- [Company branding] Configure company branding → **Organizational Branding Administrator**
+- [Company branding] Read all configuration → **Directory Readers** (also: Default user role)
+- [Connect] Passthrough authentication → **Hybrid Identity Administrator**
+- [Connect] Read all configuration → **Global Reader** (also: Hybrid Identity Administrator)
+- [Connect] Seamless single sign-on → **Hybrid Identity Administrator**
+- [Connect Sync] Manage on-premises directory synchronization → **Hybrid Identity Administrator**
+- [Cloud Provisioning] Passthrough authentication → **Hybrid Identity Administrator**
+- [Cloud Provisioning] Read all configuration → **Global Reader** (also: Hybrid Identity Administrator)
+- [Cloud Provisioning] Seamless single sign-on → **Hybrid Identity Administrator**
+- [Connect Health] Add or delete services → **Owner**
+- [Connect Health] Apply fixes to sync error → **Contributor** (also: Owner)
+- [Connect Health] Configure notifications → **Contributor** (also: Owner)
+- [Connect Health] Configure settings → **Owner**
+- [Connect Health] Configure sync notifications → **Contributor** (also: Owner)
+- [Connect Health] Read ADFS security reports → **Security Reader** (also: Contributor, Owner)
+- [Connect Health] Read all configuration → **Reader** (also: Contributor, Owner)
+- [Connect Health] Read sync errors → **Reader** (also: Contributor, Owner)
+- [Connect Health] Read sync services → **Reader** (also: Contributor, Owner)
+- [Connect Health] View metrics and alerts → **Reader** (also: Contributor, Owner)
+- [Connect Health] View metrics and alerts → **Reader** (also: Contributor, Owner)
+- [Connect Health] View sync service metrics and alerts → **Reader** (also: Contributor, Owner)
+- [Custom domain names] Manage domains → **Domain Name Administrator**
+- [Custom domain names] Read all configuration → **Directory Readers** (also: Default user role)
+- [Domain Services] Create Microsoft Entra Domain Services instance → **Application Administrator, Groups Administrator, Domain Services Contributor**
+- [Domain Services] Perform all Microsoft Entra Domain Services tasks → **AAD DC Administrators group**
+- [Domain Services] Read all configuration → **Reader on Azure subscription containing AD DS service**
+- [Devices] Delete device → **Cloud Device Administrator** (also: Intune Administrator)
+- [Devices] Disable device → **Cloud Device Administrator** (also: Intune Administrator)
+- [Devices] Enable device → **Cloud Device Administrator** (also: Intune Administrator)
+- [Devices] Read basic configuration → **Default user role**
+- [Devices] Read BitLocker keys → **Cloud Device Administrator** (also: Helpdesk Administrator, Intune Administrator, Security Administrator, Security Reader)
+- [Devices] Provision and manage IoT devices → **IoT Device Administrator** (also: Cloud Device Administrator)
+- [Devices] Manage IoT device templates → **IoT Device Administrator** (also: Cloud Device Administrator)
+- [Enterprise applications] Consent to any delegated permissions → **Cloud Application Administrator** (also: Application Administrator)
+- [Enterprise applications] Consent to application permissions not including Microsoft Graph → **Cloud Application Administrator** (also: Application Administrator)
+- [Enterprise applications] Consent to application permissions to Microsoft Graph → **Privileged Role Administrator**
+- [Enterprise applications] Consent to applications accessing own data → **Default user role**
+- [Enterprise applications] Create enterprise application → **Cloud Application Administrator** (also: Application Administrator)
+- [Enterprise applications] Manage Application Proxy → **Application Administrator**
+- [Enterprise applications] Read access review of a group or of an app → **Security Reader** (also: Security Administrator, User Administrator)
+- [Enterprise applications] Read all configuration → **Default user role**
+- [Enterprise applications] Update enterprise application assignments → **Enterprise application owner** (also: Cloud Application Administrator, Application Administrator, User Administrator)
+- [Enterprise applications] Update enterprise application owners → **Enterprise application owner** (also: Cloud Application Administrator, Application Administrator)
+- [Enterprise applications] Update enterprise application properties → **Enterprise application owner** (also: Cloud Application Administrator, Application Administrator)
+- [Enterprise applications] Update enterprise application provisioning → **Enterprise application owner** (also: Cloud Application Administrator, Application Administrator)
+- [Enterprise applications] Update enterprise application self-service → **Enterprise application owner** (also: Cloud Application Administrator, Application Administrator)
+- [Enterprise applications] Update single sign-on properties → **Enterprise application owner** (also: Cloud Application Administrator, Application Administrator)
+- [Enterprise applications] Create and modify custom authentication extensions → **Authentication Extensibility Administrator** (also: Application Administrator)
+- [Entitlement management] Tasks in Entitlement Management → **Identity Governance Administrator. For roles lesser privilege than this within the Entitlement Management system, see: Delegation and roles in entitlement management.**
+- [Groups] Assign license → **User Administrator**
+- [Groups] Create group → **Groups Administrator** (also: User Administrator)
+- [Groups] Create, update, or delete access review of a group or of an app → **User Administrator**
+- [Groups] Manage group expiration → **User Administrator**
+- [Groups] Manage group settings → **Groups Administrator** (also: User Administrator)
+- [Groups] Read all configuration (except hidden membership) → **Directory Readers** (also: Default user role)
+- [Groups] Read hidden membership → **Group member** (also: Group owner, Password Administrator, Exchange Administrator, SharePoint Administrator, Teams Administrator, User Administrator)
+- [Groups] Read membership of groups with hidden membership → **Helpdesk Administrator** (also: User Administrator, Teams Administrator)
+- [Groups] Revoke license → **License Administrator** (also: User Administrator)
+- [Groups] Update dynamic membership groups → **Group owner** (also: User Administrator)
+- [Groups] Update group owners → **Group owner** (also: User Administrator)
+- [Groups] Update group properties → **Group owner** (also: User Administrator)
+- [Groups] Delete group → **Groups Administrator** (also: User Administrator)
+- [Licenses] Assign license → **License Administrator** (also: User Administrator)
+- [Licenses] Read all configuration → **Directory Readers** (also: Default user role)
+- [Licenses] Revoke license → **License Administrator** (also: User Administrator)
+- [Licenses] Try or buy subscription → **Billing Administrator**
+- [Lifecycle Workflows] Create a workflow → **Lifecycle workflows Administrator**
+- [Lifecycle Workflows] Add a custom extension to a workflow → **Lifecycle workflows Administrator. You must also have either the Logic App contributor or Owner Azure Resource Manager role.**
+- [Microsoft Entra Health] View scenario monitoring signals and alert configurations → **Reports Reader** (also: Security Reader, Security Operator, Security Administrator, Helpdesk Administrator, Global Reader)
+- [Microsoft Entra Health] Update alerts and alert email configurations → **Helpdesk Administrator**
+- [Microsoft Entra ID Protection] Configure alert notifications → **Security Administrator**
+- [Microsoft Entra ID Protection] Configure and enable or disable MFA policy → **Security Administrator**
+- [Microsoft Entra ID Protection] Configure and enable or disable sign-in risk policy → **Security Administrator**
+- [Microsoft Entra ID Protection] Configure and enable or disable user risk policy → **Security Administrator**
+- [Microsoft Entra ID Protection] Configure weekly digests → **Security Administrator**
+- [Microsoft Entra ID Protection] Dismiss all risk detections → **Security Operator**
+- [Microsoft Entra ID Protection] Fix or dismiss vulnerability → **Security Administrator**
+- [Microsoft Entra ID Protection] Read all configuration → **Security Reader**
+- [Microsoft Entra ID Protection] Read all risk detections → **Security Reader**
+- [Microsoft Entra ID Protection] Read vulnerabilities → **Security Reader**
+- [Monitoring and health - Audit and sign-in logs] Read audit and sign-in logs → **Reports Reader** (also: Application Administrator, Cloud Application Administrator, Cloud Device Administrator, Global Secure Access Administrator, Hybrid Identity Administrator, Security Administrator, Security Operator, Security Reader)
+- [Monitoring and health - Provisioning logs] Read provisioning logs → **Reports Reader** (also: Enterprise application owner, Application Administrator, Cloud Application Administrator, Cloud Device Administrator, Hybrid Identity Administrator, Security Administrator, Security Operator, Security Reader)
+- [Monitoring and health - Recommendations] Read recommendations → **Reports Reader** (also: Security Reader, Global Reader, Helpdesk Administrator, Service Support Administrator, User Administrator)
+- [Monitoring and health - Recommendations] Update recommendations → **Authentication Policy Administrator** (also: Application Administrator, Authentication Administrator, Cloud Application Administrator, Conditional Access Administrator, Exchange Administrator, Hybrid Identity Administrator, Identity Governance Administrator, Privileged Role Administrator, Security Administrator, Security Operator, SharePoint Administrator)
+- [Monitoring and health - Recommendations] Read Identity Secure Score improvement action → **Service Support Administrator** (also: Security Administrator, Exchange Administrator)
+- [Monitoring and health - Recommendations] Update Identity Secure Score improvement action → **SharePoint Administrator** (also: Helpdesk Administrator, User Administrator, Security Reader, Security Operator, Global Reader)
+- [Monitoring and health - Sign-in diagnostic tool] Use sign-in diagnostic from Diagnose and solve problems → **Billing Administrator** (also: Application Administrator, Cloud Application Administrator, Cloud Device Administrator, Conditional Access Administrator, Customer LockBox Access Approver, Groups Administrator, License Administrator, Global Reader, Helpdesk Administrator, Privileged Role Administrator, Security Administrator, User Administrator)
+- [Monitoring and health - Sign-in diagnostic tool] Use sign-in diagnostic from the Sign-in logs → **BOTH Reports Reader AND Billing Administrator** (also: Global Secure Access Administrator, Hybrid Identity Administrator, Security Administrator, Security Operator, Security Reader)
+- [Multifactor authentication] Delete all existing app passwords generated by the selected users → **Authentication Policy Administrator** (also: Authentication Administrator)
+- [Multifactor authentication] Disable per-user MFA → **Authentication Administrator** (also: Privileged Authentication Administrator)
+- [Multifactor authentication] Enable per-user MFA → **Authentication Administrator** (also: Privileged Authentication Administrator)
+- [Multifactor authentication] Manage MFA service settings → **Authentication Policy Administrator**
+- [Multifactor authentication] Require selected users to provide contact methods again → **Authentication Administrator**
+- [Multifactor authentication] Restore multifactor authentication on all remembered devices → **Authentication Administrator**
+- [MFA Server] Block/unblock users → **Authentication Policy Administrator**
+- [MFA Server] Configure account lockout → **Authentication Policy Administrator**
+- [MFA Server] Configure caching rules → **Authentication Policy Administrator**
+- [MFA Server] Configure fraud alert → **Authentication Policy Administrator**
+- [MFA Server] Configure notifications → **Authentication Policy Administrator**
+- [MFA Server] Configure one-time bypass → **Authentication Policy Administrator**
+- [MFA Server] Configure phone call settings → **Authentication Policy Administrator**
+- [MFA Server] Configure providers → **Authentication Policy Administrator**
+- [MFA Server] Configure server settings → **Authentication Policy Administrator**
+- [MFA Server] Read activity report → **Global Reader**
+- [MFA Server] Read all configuration → **Global Reader**
+- [MFA Server] Read server status → **Global Reader**
+- [Organizational relationships] Manage identity providers → **External Identity Provider Administrator**
+- [Organizational relationships] Read all configuration → **Global Reader**
+- [Password reset] Configure authentication methods → **Authentication Policy Administrator**
+- [Password reset] Configure customization → **Authentication Policy Administrator**
+- [Password reset] Configure notification → **Authentication Policy Administrator**
+- [Password reset] Configure on-premises integration → **Authentication Policy Administrator**
+- [Password reset] Configure password reset properties → **User Administrator** (also: Authentication Policy Administrator)
+- [Password reset] Configure registration → **Authentication Policy Administrator**
+- [Password reset] Read all configuration → **Security Administrator** (also: User Administrator)
+- [Privileged Identity Management] Assign users to roles → **Privileged Role Administrator**
+- [Privileged Identity Management] Configure role settings → **Privileged Role Administrator**
+- [Privileged Identity Management] View audit activity → **Security Reader**
+- [Privileged Identity Management] View role memberships → **Security Reader**
+- [Roles and administrators] Manage role assignments → **Privileged Role Administrator**
+- [Roles and administrators] Read access review of a Microsoft Entra role → **Security Reader** (also: Security Administrator, Privileged Role Administrator)
+- [Roles and administrators] Read all configuration → **Default user role**
+- [Security - Authentication methods] Enable or disable authentication methods → **Authentication Policy Administrator**
+- [Security - Authentication methods] View, provision on behalf of, and manage individual user authentication methods → **Authentication Administrator** (also: Privileged Authentication Administrator)
+- [Security - Authentication methods] Configure password protection → **Security Administrator**
+- [Security - Authentication methods] Configure smart lockout → **Security Administrator**
+- [Security - Authentication methods] Read all configuration → **Global Reader**
+- [Security - Conditional Access] Configure MFA trusted IP addresses → **Conditional Access Administrator**
+- [Security - Conditional Access] Create custom controls → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Create named locations → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Create policies → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Create terms of use → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Create VPN connectivity certificate → **Cloud Application Administrator** (also: Application Administrator)
+- [Security - Conditional Access] Delete classic policy → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Restore a soft-deleted policy → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Delete terms of use → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Delete VPN connectivity certificate → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Disable classic policy → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Manage custom controls → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Manage named locations → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Manage terms of use → **Conditional Access Administrator** (also: Security Administrator)
+- [Security - Conditional Access] Read all configuration → **Security Reader**
+- [Security - Conditional Access] Read named locations → **Security Reader**
+- [Security - Conditional Access] Read terms of use → **Security Reader** (also: Global Reader)
+- [Security - Conditional Access] Read which terms of use were accepted by the signed-in user → **Default user role**
+- [Security - Identity Security Score] Read all configuration → **Security Reader** (also: Security Administrator)
+- [Security - Identity Security Score] Read security score → **Security Reader** (also: Security Administrator)
+- [Security - Identity Security Score] Update event status → **Security Administrator**
+- [Security - Risky sign-ins] Read all configuration → **Security Reader**
+- [Security - Risky sign-ins] Read risky sign-ins → **Security Reader**
+- [Security - Users flagged for risk] Dismiss all events → **Security Administrator**
+- [Security - Users flagged for risk] Perform identity containment actions for SOC incident response → **Entra SOC Identity Responder**
+- [Security - Users flagged for risk] Read all configuration → **Security Reader**
+- [Security - Users flagged for risk] Read users flagged for risk → **Security Reader**
+- [Temporary Access Pass] Create, delete, or view a Temporary Access Pass for admins or members (except themselves) → **Privileged Authentication Administrator**
+- [Temporary Access Pass] Create, delete, or view a Temporary Access Pass for members (except themselves) → **Authentication Administrator**
+- [Temporary Access Pass] View a Temporary Access Pass details for a user (without reading the code itself) → **Global Reader**
+- [Temporary Access Pass] Configure or update the Temporary Access Pass authentication method policy → **Authentication Policy Administrator**
+- [Tenants] Create Microsoft Entra ID or Azure AD B2C Tenant → **Tenant Creator**
+- [Tenants] Update Microsoft Entra tenant properties → **Billing Administrator**
+- [Tenants] Manage privacy statement and contact → **Billing Administrator**
+- [Users] Add user to directory role → **Privileged Role Administrator**
+- [Users] Add user to group → **User Administrator**
+- [Users] Assign license → **License Administrator** (also: User Administrator)
+- [Users] Create guest user → **Guest Inviter** (also: User Administrator)
+- [Users] Reset guest user invite → **Helpdesk Administrator** (also: User Administrator)
+- [Users] Create user → **User Administrator**
+- [Users] Delete users → **User Administrator**
+- [Users] Invalidate refresh tokens of limited admins → **User Administrator**
+- [Users] Invalidate refresh tokens of non-admins → **Helpdesk Administrator** (also: User Administrator , Security Administrator)
+- [Users] Invalidate refresh tokens of privileged admins → **Privileged Authentication Administrator**
+- [Users] Read basic configuration → **Default user role**
+- [Users] Reset password for limited admins → **User Administrator**
+- [Users] Reset password of non-admins → **Password Administrator** (also: User Administrator)
+- [Users] Reset password of privileged admins → **Privileged Authentication Administrator**
+- [Users] Revoke license → **License Administrator** (also: User Administrator)
+- [Users] Update all properties except User Principal Name → **User Administrator**
+- [Users] Update On-premises sync enabled property → **Hybrid Identity Administrator**
+- [Users] Update profile photos and people settings → **People Administrator**
+- [Users] Update User Principal Name for limited admins → **User Administrator**
+- [Users] Update User Principal Name property on privileged admins → **Privileged Authentication Administrator**
+- [Users] Update user settings - Default user role permissions → **Privileged Role Administrator**
+- [Users] Update user settings - Guest user access → **Privileged Role Administrator**
+- [Users] Update user settings - Administration center → **Global Administrator**
+- [Users] Update user settings - LinkedIn account connections → **Global Administrator**
+- [Users] Update user settings - Show keep user signed in → **Global Administrator**
+- [Users] Update Authentication methods → **Authentication Administrator** (also: Privileged Authentication Administrator)
+- [Support] Submit support ticket → **Service Support Administrator** (also: Application Administrator, Azure Information Protection Administrator, Billing Administrator, Cloud Application Administrator, Compliance Administrator, Dynamics 365 Administrator, Desktop Analytics Administrator, Exchange Administrator, Helpdesk Administrator, Intune Administrator, Password Administrator, Fabric Administrator, Privileged Authentication Administrator, SharePoint Administrator, Skype for Business Administrator, Teams Administrator, Teams Communications Administrator, User Administrator)

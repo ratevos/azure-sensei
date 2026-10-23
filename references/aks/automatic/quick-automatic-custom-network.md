@@ -1,0 +1,518 @@
+# Quickstart: Create an Azure Kubernetes Service (AKS) Automatic cluster in a custom virtual network
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/automatic/quick-automatic-custom-network  
+> Microsoft doc last updated: 09/15/2026
+
+
+**Applies to:** :heavy_check_mark: AKS Automatic
+
+[Azure Kubernetes Service (AKS) Automatic][what-is-aks-automatic] provides the easiest managed Kubernetes experience for developers, DevOps engineers, and platform engineers. Ideal for modern and AI applications, AKS Automatic automates AKS cluster setup and operations and embeds best practice configurations. Users of any skill level can benefit from the security, performance, and dependability of AKS Automatic for their applications. AKS Automatic also includes a [pod readiness SLA][azure-sla] that guarantees 99.9% of qualifying pod readiness operations complete within 5 minutes, guaranteeing reliable, self-healing infrastructure for your applications. This quickstart assumes a basic understanding of Kubernetes concepts. For more information, see [Kubernetes core concepts for Azure Kubernetes Service (AKS)][kubernetes-concepts].
+
+In this quickstart, you learn to:
+
+- Create a virtual network.
+- Create a managed identity with permissions over the virtual network.
+- Deploy an AKS Automatic cluster in the virtual network.
+- Run a sample multi-container application with a group of microservices and web front ends simulating a retail scenario.
+
+If you don't have an Azure account, create a [free account](https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn).
+
+### Prerequisites
+
+:::zone pivot="azure-cli"
+
+- Azure CLI version 2.86.0 or later. To find the version, run `az --version` command. If you need to install or upgrade, see [Install Azure CLI](https://learn.microsoft.com/en-us/cli/azure/get-started-with-azure-cli).
+
+:::zone-end
+
+:::zone pivot="terraform"
+
+- [Install and configure Terraform][terraform-install-configure].
+
+> [!NOTE]
+> This sample creates the AKS Automatic cluster with the AzureRM provider's `azurerm_kubernetes_automatic_cluster` resource, which requires AzureRM provider version `v4.81` or later. For an equivalent sample that uses the AzAPI provider, see the [101-aks-automatic-custom-network-azapi](https://github.com/Azure/terraform/tree/master/quickstart/101-aks-automatic-custom-network-azapi) sample.
+
+:::zone-end
+
+- Cluster identity with a `Network Contributor` built-in role assignment on the API server subnet.
+- Cluster identity with a `Network Contributor` built-in role assignment on the virtual network to support [Node Autoprovisioning](https://learn.microsoft.com/en-us/azure/aks/node-autoprovision).
+- User identity accessing the cluster with [`Azure Kubernetes Service Cluster User Role`](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/containers#azure-kubernetes-service-cluster-user-role) and [`Azure Kubernetes Service RBAC Writer`](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/containers#azure-kubernetes-service-rbac-writer).
+- A virtual network with a dedicated API server subnet of at least `*/28` size that is delegated to `Microsoft.ContainerService/managedClusters`.
+  - If there's a Network Security Group (NSG) attached to subnets, ensure that the NSG security rules permit the required types of communication between cluster components. For detailed requirements, see [Custom virtual network requirements][concepts-network-custom-vnet].
+  - If there's an Azure Firewall or other outbound restriction method or appliance, ensure the [required outbound network rules and FQDNs][outbound-rules-control-egress] are allowed.
+- AKS Automatic will [enable Azure Policy on your AKS cluster][policy-for-kubernetes], but you should pre-register the `Microsoft.PolicyInsights` resource provider in your subscription for a smoother experience. For more information, see [Azure resource providers and types][az-provider-register] for more information.
+- Uninstall the AKS-preview extension using `az extension remove -n aks-preview`. 
+
+> [!IMPORTANT]
+> Starting on AKS 1.36, new AKS Automatic clusters will by default enable [Kubernetes Gateway API via the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing-gateway-api) instead of [Managed NGINX ingress with the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing) due to the upstream [Ingress NGINX retirement](https://www.kubernetes.dev/blog/2025/11/12/ingress-nginx-retirement/).
+>
+> Existing Automatic clusters aren't affected but should begin migration to [Kubernetes Gateway API via the application routing add-on](https://learn.microsoft.com/en-us/azure/aks/app-routing-gateway-api#enable-for-an-existing-cluster).
+
+## Limitations
+
+The following limitations apply to AKS Automatic clusters:
+
+- AKS Automatic is generally available in the following regions: `australiacentral`, `australiaeast`, `australiasoutheast`, `austriaeast`, `belgiumcentral`, `brazilsouth`, `canadacentral`, `canadaeast`, `centralindia`, `centralus`, `chilecentral`, `denmarkeast`, `eastasia`, `eastus`, `eastus2`, `francecentral`, `germanywestcentral`, `indonesiacentral`, `israelcentral`, `italynorth`, `japaneast`, `japanwest`, `koreacentral`, `koreasouth`, `malaysiawest`, `mexicocentral`, `newzealandnorth`, `northcentralus`, `northeurope`, `norwayeast`, `polandcentral`, `southafricanorth`, `southcentralus`, `southeastasia`, `southindia`, `spaincentral`, `swedencentral`, `switzerlandnorth`, `uaenorth`, `uksouth`, `ukwest`, `westcentralus`, `westeurope`, `westus`, `westus2`, `westus3`.
+- New AKS Automatic clusters by default enable managed system node pools and [LocalDNS](https://learn.microsoft.com/en-us/azure/aks/dns-concepts#localdns-in-azure-kubernetes-service). You can't create AKS Automatic clusters without managed system node pools in any region.
+- AKS Automatic cluster has [node resource group lockdown](https://learn.microsoft.com/en-us/azure/aks/node-resource-group-lockdown) preconfigured, which doesn't allow changes to the `MC_` resource group, preventing virtual network links on the default Private DNS zone. For cross‑VNet or custom DNS scenarios, use custom network and private DNS by following [Create a private Azure Kubernetes Service (AKS) Automatic cluster in a custom virtual network](https://learn.microsoft.com/en-us/azure/aks/automatic/quick-automatic-private-custom-network).
+- Azure CLI version 2.86.0 or later is required. To find the version, run `az --version` command. If you need to install or upgrade, see [Install Azure CLI](https://learn.microsoft.com/en-us/cli/azure/get-started-with-azure-cli).
+- The following extensions aren't supported:
+  - [Dapr](https://learn.microsoft.com/en-us/azure/aks/dapr)
+  - [Azure Machine Learning](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-attach-kubernetes-anywhere)
+- Windows nodes aren't supported.
+- Migration from AKS base SKU to automatic SKU isn't supported.
+- Migration from an existing AKS Automatic cluster without managed system node pools to AKS Automatic with managed system node pools is supported in preview in regions where managed system node pools are generally available. Migration from AKS Automatic with managed system node pools back to AKS Automatic without managed system node pools isn't supported.
+
+:::zone pivot="azure-cli,bicep"
+
+## Define variables
+
+Define the following variables that are used in the following steps.
+
+:::code language="azurecli" source="~/aks-samples/automatic/custom-network/public/sh/define-vars.sh" interactive="cloudshell-bash":::
+
+## Create a resource group
+
+An [Azure resource group][azure-resource-group] is a logical group in which Azure resources are deployed and managed.
+
+Create a resource group using the [az group create][az-group-create] command.
+
+:::code language="azurecli" source="~/aks-samples/automatic/custom-network/public/sh/create-rg.sh" interactive="cloudshell-bash":::
+
+The following sample output resembles successful creation of the resource group:
+
+```output
+{
+  "id": "/subscriptions/<guid>/resourceGroups/automatic-rg",
+  "location": "canadacentral",
+  "managedBy": null,
+  "name": "automatic-rg",
+  "properties": {
+    "provisioningState": "Succeeded"
+  },
+  "tags": null
+}
+```
+
+:::zone-end
+
+:::zone pivot="azure-cli"
+
+## Create a virtual network
+
+Create a virtual network using the [`az network vnet create`][az-network-vnet-create] command. Create an API server subnet, user node subnet, and system node subnet using the [`az network vnet subnet create`][az-network-vnet-subnet-create] command.
+
+When you use a custom virtual network with AKS Automatic, you must create an API server subnet. AKS delegates the subnet to `Microsoft.ContainerService/managedClusters` on your behalf, which grants the AKS service permissions to inject the API server pods and internal load balancer into that subnet. You can't use the subnet for any other workloads, but you can use it for the API server subnet for multiple AKS clusters located in the same virtual network. The minimum supported API server subnet size to support a single cluster is a */28*.
+
+> [!WARNING]
+> An AKS cluster reserves at least nine (9) IPs in the subnet address space. Running out of IP addresses might prevent API server scaling and cause an API server outage.
+
+:::code language="azurecli" source="~/aks-samples/automatic/custom-network/public/sh/create-vnet.sh" interactive="cloudshell-bash":::
+
+### Network security group requirements
+
+If you added Network Security Group (NSG) rules to restrict traffic between different subnets in your custom virtual network, ensure that the NSG security rules permit the required types of communication between cluster components.
+
+For detailed NSG requirements when using custom virtual networks with AKS clusters, see [Custom virtual network requirements][concepts-network-custom-vnet].
+
+## Create a managed identity and give it permissions on the virtual network
+
+Create a managed identity using the [`az identity create`][az-identity-create] command and retrieve the principal ID. Assign the **Network Contributor** role on virtual network to the managed identity using the [`az role assignment create`][az-role-assignment-create] command.
+
+:::code language="azurecli" source="~/aks-samples/automatic/custom-network/public/sh/create-uami.sh" interactive="cloudshell-bash":::
+
+## Create an AKS Automatic cluster in a custom virtual network
+
+To create an AKS Automatic cluster, use the [az aks create][az-aks-create] command.
+
+:::code language="azurecli" source="~/aks-samples/automatic/custom-network/public/sh/create-aks.sh" interactive="cloudshell-bash" highlight="5,6,7,8":::
+
+After a few minutes, the command completes and returns JSON-formatted information about the cluster.
+
+## Connect to the cluster
+
+To manage a Kubernetes cluster, use the Kubernetes command-line client, [kubectl][kubectl]. `kubectl` is already installed if you use Azure Cloud Shell. To install `kubectl` locally, run the [az aks install-cli][az-aks-install-cli] command. AKS Automatic clusters are configured with [Microsoft Entra ID for Kubernetes role-based access control (RBAC)][aks-entra-rbac].
+
+When you create a cluster using the Azure CLI, your user is [assigned built-in roles][aks-entra-rbac-builtin-roles] for `Azure Kubernetes Service RBAC Cluster Admin`.
+
+Configure `kubectl` to connect to your Kubernetes cluster using the [az aks get-credentials][az-aks-get-credentials] command. This command downloads credentials and configures the Kubernetes CLI to use them.
+
+```azurecli-interactive
+az aks get-credentials --resource-group ${RG_NAME} --name ${CLUSTER_NAME}
+```
+
+Verify the connection to your cluster using the [kubectl get][kubectl-get] command. This command returns a list of the cluster nodes.
+
+```bash
+kubectl get nodes
+```
+
+The following sample output shows how you're asked to sign in.
+
+```output
+To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code AAAAAAAAA to authenticate.
+```
+
+After you sign in, the following sample output shows the managed system node pools. Make sure the node status is *Ready*.
+
+```output
+NAME                           STATUS   ROLES    AGE   VERSION
+aks-hostedpool-16652789-vms1   Ready    <none>   19m   v1.34.7
+aks-hostedpool-16652789-vms2   Ready    <none>   19m   v1.34.7
+aks-hostedpool-16652789-vms3   Ready    <none>   19m   v1.34.7
+aks-system-surge-zq4d2         Ready    <none>   19m   v1.34.7
+```
+
+:::zone-end
+
+:::zone target="docs" pivot="bicep"
+
+## Create a virtual network
+
+This Bicep file defines a virtual network.
+
+:::code language="bicep" source="~/aks-samples/automatic/custom-network/public/bicep/virtualNetwork.bicep":::
+
+Save the Bicep file **virtualNetwork.bicep** to your local computer.
+
+> [!IMPORTANT]
+> The Bicep file sets the `vnetName` param to  *aksAutomaticVnet*, the `addressPrefix` param to *172.19.0.0/16*, the `apiServerSubnetPrefix` param to *172.19.0.0/28*, and the `apiServerSubnetPrefix` param to *172.19.1.0/24*. If you want to use different values, make sure to update the strings to your preferred values.
+
+Deploy the Bicep file using the Azure CLI.
+
+```azurecli-interactive
+az deployment group create --resource-group <resource-group> --template-file virtualNetwork.bicep
+```
+
+All traffic within the virtual network is allowed by default. If you added Network Security Group (NSG) rules to restrict traffic between different subnets in your custom virtual network, ensure that the NSG security rules permit the required types of communication between cluster components.
+
+For detailed NSG requirements when using custom virtual networks with AKS clusters, see [Custom virtual network requirements][concepts-network-custom-vnet].
+
+## Create a managed identity
+
+This Bicep file defines a user assigned managed identity.
+
+:::code language="bicep" source="~/aks-samples/automatic/custom-network/public/bicep/uami.bicep":::
+
+Save the Bicep file **uami.bicep** to your local computer.
+
+> [!IMPORTANT]
+> The Bicep file sets the `uamiName` param to the *aksAutomaticUAMI*. If you want to use a different identity name, make sure to update the string to your preferred name.
+
+Deploy the Bicep file using the Azure CLI.
+
+```azurecli-interactive
+az deployment group create --resource-group <resource-group> --template-file uami.bicep
+```
+
+## Assign the Network Contributor role over the virtual network
+
+This Bicep file defines role assignments over the virtual network.
+
+:::code language="bicep" source="~/aks-samples/automatic/custom-network/public/bicep/roleAssignments.bicep":::
+
+Save the Bicep file **roleAssignments.bicep** to your local computer.
+
+> [!IMPORTANT]
+> The Bicep file sets the `vnetName` param to *aksAutomaticVnet*. If you used a different virtual network name, make sure to update the string to your preferred virtual network name.
+
+Deploy the Bicep file using the Azure CLI. You need to provide the user assigned identity principal ID.
+
+```azurecli-interactive
+az deployment group create --resource-group <resource-group> --template-file roleAssignments.bicep \
+--parameters uamiPrincipalId=<user assigned identity prinicipal id>
+```
+
+## Create an AKS Automatic cluster in a custom virtual network
+
+This Bicep file defines the AKS Automatic cluster.
+
+:::code language="bicep" source="~/aks-samples/automatic/custom-network/public/bicep/aks.bicep" highlight="27,28,29,30,31,32,33,34,35,36,39,40,41,42":::
+
+Save the Bicep file **aks.bicep** to your local computer.
+
+> [!IMPORTANT]
+> The Bicep file sets the `clusterName` param to *aksAutomaticCluster*. If you want a different cluster name, make sure to update the string to your preferred cluster name.
+
+Deploy the Bicep file using the Azure CLI. You need to provide the API server subnet resource ID, the user node subnet resource ID, the system node subnet resource ID, and user assigned managed identity resource ID.
+
+```azurecli-interactive
+az deployment group create --resource-group <resource-group> --template-file aks.bicep \
+--parameters apiServerSubnetId=<API server subnet resource id> \
+--parameters nodeSubnetId=<user node subnet resource id> \
+--parameters systemNodeSubnetId=<system node subnet resource id> \
+--parameters uamiId=<user assigned identity id>
+```
+
+## Connect to the cluster
+
+To manage a Kubernetes cluster, use the Kubernetes command-line client, [kubectl][kubectl]. `kubectl` is already installed if you use Azure Cloud Shell. To install `kubectl` locally, run the [az aks install-cli][az-aks-install-cli] command. AKS Automatic clusters are configured with [Microsoft Entra ID for Kubernetes role-based access control (RBAC)][aks-entra-rbac].
+
+> [!IMPORTANT]
+> When you create a cluster using Bicep, you need to [assign one of the built-in roles][aks-entra-rbac-builtin-roles] such as `Azure Kubernetes Service RBAC Reader`, `Azure Kubernetes Service RBAC Writer`, `Azure Kubernetes Service RBAC Admin`, or `Azure Kubernetes Service RBAC Cluster Admin` to your users, scoped to the cluster or a specific namespace, example using `az role assignment create --role "Azure Kubernetes Service RBAC Cluster Admin" --scope <AKS cluster resource id> --assignee user@contoso.com`. Also make sure your users have the `Azure Kubernetes Service Cluster User` built-in role to be able to do run `az aks get-credentials`, and then get the kubeconfig of your AKS cluster using the `az aks get-credentials` command.
+
+Configure `kubectl` to connect to your Kubernetes cluster using the [az aks get-credentials][az-aks-get-credentials] command. This command downloads credentials and configures the Kubernetes CLI to use them.
+
+```azurecli-interactive
+az aks get-credentials --resource-group <resource-group> --name <cluster-name>
+```
+
+Verify the connection to your cluster using the [kubectl get][kubectl-get] command. This command returns a list of the cluster nodes.
+
+```bash
+kubectl get nodes
+```
+
+The following sample output shows how you're asked to sign in.
+
+```output
+To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code AAAAAAAAA to authenticate.
+```
+
+After you sign in, the following sample output shows the managed system node pools. Make sure the node status is *Ready*.
+
+```output
+NAME                           STATUS   ROLES    AGE   VERSION
+aks-hostedpool-16652789-vms1   Ready    <none>   19m   v1.34.7
+aks-hostedpool-16652789-vms2   Ready    <none>   19m   v1.34.7
+aks-hostedpool-16652789-vms3   Ready    <none>   19m   v1.34.7
+aks-system-surge-zq4d2         Ready    <none>   19m   v1.34.7
+```
+
+:::zone-end
+
+:::zone pivot="terraform"
+
+## Review the Terraform code
+
+> [!NOTE]
+> The sample code for this article is located in the [Azure Terraform GitHub repo](https://github.com/Azure/terraform/tree/master/quickstart/101-aks-automatic-custom-network). You can view the log file containing the [test results from current and previous versions of Terraform](https://github.com/Azure/terraform/tree/master/quickstart/101-aks-automatic-custom-network/TestRecord.md).
+>
+> See more [articles and sample code showing how to use Terraform to manage Azure resources](https://learn.microsoft.com/en-us/azure/terraform).
+
+1. Create a directory in which to test the sample Terraform code and make it the current directory.
+1. Create a file named `providers.tf` and insert the following code:
+
+    [!code-terraform[master](https://learn.microsoft.com/en-us/azure/aks/terraform_samples/quickstart/101-aks-automatic-custom-network/providers.tf)]
+
+1. Create a file named `main.tf` and insert the following code:
+
+    [!code-terraform[master](https://learn.microsoft.com/en-us/azure/aks/terraform_samples/quickstart/101-aks-automatic-custom-network/main.tf)]
+
+1. Create a file named `variables.tf` and insert the following code:
+
+    [!code-terraform[master](https://learn.microsoft.com/en-us/azure/aks/terraform_samples/quickstart/101-aks-automatic-custom-network/variables.tf)]
+
+1. Create a file named `outputs.tf` and insert the following code:
+
+    [!code-terraform[master](https://learn.microsoft.com/en-us/azure/aks/terraform_samples/quickstart/101-aks-automatic-custom-network/outputs.tf)]
+
+## Initialize Terraform
+
+Run [terraform init](https://developer.hashicorp.com/terraform/cli/commands/init) to initialize the Terraform deployment. This command downloads the Azure providers required to manage your Azure resources.
+
+```console
+terraform init -upgrade
+```
+
+## Create a Terraform execution plan
+
+Run [terraform plan](https://developer.hashicorp.com/terraform/cli/commands/plan) to create an execution plan.
+
+```console
+terraform plan -out main.tfplan
+```
+
+## Apply a Terraform execution plan
+
+Run [terraform apply](https://developer.hashicorp.com/terraform/cli/commands/apply) to apply the execution plan to your cloud infrastructure.
+
+```console
+terraform apply main.tfplan
+```
+
+Creating an AKS Automatic cluster takes several minutes to complete.
+
+## Verify the cluster
+
+1. Get the Azure resource group name and cluster name.
+
+    ```console
+    resource_group_name=$(terraform output -raw resource_group_name)
+    cluster_name=$(terraform output -raw cluster_name)
+    ```
+
+1. Run [az aks show][az-aks-show] to display the cluster and confirm it uses the `Automatic` SKU and your custom subnets.
+
+    ```azurecli
+    az aks show --resource-group $resource_group_name --name $cluster_name --query "{name:name, sku:sku, provisioningState:provisioningState, apiServerSubnet:apiServerAccessProfile.subnetId}"
+    ```
+
+## Connect to the cluster
+
+To manage a Kubernetes cluster, use the Kubernetes command-line client, [kubectl][kubectl]. You can install `kubectl` locally using the [az aks install-cli][az-aks-install-cli] command. AKS Automatic clusters are configured with [Microsoft Entra ID for Kubernetes role-based access control (RBAC)][aks-entra-rbac].
+
+Configure `kubectl` to connect to your Kubernetes cluster using the [az aks get-credentials][az-aks-get-credentials] command.
+
+```azurecli
+az aks get-credentials --resource-group $resource_group_name --name $cluster_name
+```
+
+Verify the connection to your cluster using the [kubectl get][kubectl-get] command.
+
+```bash
+kubectl get nodes
+```
+
+:::zone-end
+
+## Deploy the application
+
+To deploy the application, you use a manifest file to create all the objects required to run the [AKS Store application](https://github.com/Azure-Samples/aks-store-demo). A [Kubernetes manifest file][kubernetes-deployment] defines a cluster's desired state, such as which container images to run. The manifest includes the following Kubernetes deployments and services:
+
+- **Store front**: Web application for customers to view products and place orders.
+- **Product service**: Shows product information.
+- **Order service**: Places orders.
+- **Rabbit MQ**: Message queue for an order queue.
+
+> [!NOTE]
+> We don't recommend running stateful containers, such as Rabbit MQ, without persistent storage for production. These containers are used here for simplicity, but we recommend using managed services, such as Azure Cosmos DB or Azure Service Bus.
+
+1. Create a namespace `aks-store-demo` to deploy the Kubernetes resources into.
+
+    ```bash
+    kubectl create ns aks-store-demo
+    ```
+
+1. Deploy the application using the [kubectl apply][kubectl-apply] command into the `aks-store-demo` namespace. The YAML file defining the deployment is on [GitHub](https://github.com/Azure-Samples/aks-store-demo).
+
+    ```bash
+    kubectl apply -n aks-store-demo -f https://raw.githubusercontent.com/Azure-Samples/aks-store-demo/main/aks-store-ingress-quickstart.yaml
+    ```
+
+    The following sample output shows the deployments and services:
+
+    ```output
+    statefulset.apps/rabbitmq created
+    configmap/rabbitmq-enabled-plugins created
+    service/rabbitmq created
+    deployment.apps/order-service created
+    service/order-service created
+    deployment.apps/product-service created
+    service/product-service created
+    deployment.apps/store-front created
+    service/store-front created
+    ingress/store-front created
+    ```
+
+## Test the application
+
+When the application runs, a Kubernetes service exposes the application front end to the internet. This process can take a few minutes to complete.
+
+1. Check the status of the deployed pods using the [kubectl get pods][kubectl-get] command. Make sure all pods are `Running` before proceeding. If this is the first workload you deploy, it might take a few minutes for [node auto provisioning][node-auto-provisioning] to create a node pool to run the pods.
+
+    ```bash
+    kubectl get pods -n aks-store-demo
+    ```
+
+1. Check for a public IP address for the store-front application. Monitor progress using the [kubectl get service][kubectl-get] command with the `--watch` argument.
+
+    ```bash
+    kubectl get ingress store-front -n aks-store-demo --watch
+    ```
+
+    The **ADDRESS** output for the `store-front` service initially shows empty:
+
+    ```output
+    NAME          CLASS                                HOSTS   ADDRESS        PORTS   AGE
+    store-front   webapprouting.kubernetes.azure.com   *                      80      12m
+    ```
+
+1. Once the **ADDRESS** changes from blank to an actual public IP address, use `CTRL-C` to stop the `kubectl` watch process.
+
+    The following sample output shows a valid public IP address assigned to the service:
+
+    ```output
+    NAME          CLASS                                HOSTS   ADDRESS        PORTS   AGE
+    store-front   webapprouting.kubernetes.azure.com   *       4.255.22.196   80      12m
+    ```
+
+1. Open a web browser to the external IP address of your ingress to see the Azure Store app in action.
+
+    
+
+## Delete the cluster
+
+:::zone pivot="azure-cli,bicep"
+
+If you don't plan on going through the [AKS tutorial][aks-tutorial], clean up unnecessary resources to avoid Azure charges. Run the [az group delete][az-group-delete] command to remove the resource group, container service, and all related resources.
+
+```azurecli-interactive
+az group delete --name <resource-group> --yes --no-wait
+```
+> [!NOTE]
+> The AKS cluster was created with a user-assigned managed identity. If you don't need that identity anymore, you can manually remove it.
+
+:::zone-end
+
+:::zone pivot="terraform"
+
+When you no longer need the resources created via Terraform, run [terraform plan](https://developer.hashicorp.com/terraform/cli/commands/plan) and specify the `destroy` flag.
+
+```console
+terraform plan -destroy -out main.destroy.tfplan
+```
+
+Run [terraform apply](https://developer.hashicorp.com/terraform/cli/commands/apply) to apply the execution plan.
+
+```console
+terraform apply main.destroy.tfplan
+```
+
+:::zone-end
+
+## Next steps
+
+In this quickstart, you deployed a Kubernetes cluster using [AKS Automatic][what-is-aks-automatic] inside a custom virtual network and then deployed a simple multi-container application to it. This sample application is for demo purposes only and doesn't represent all the best practices for Kubernetes applications. For guidance on creating full solutions with AKS for production, see [AKS solution guidance][aks-solution-guidance].
+
+To learn more about AKS Automatic, continue to the introduction.
+
+> [Introduction to Azure Kubernetes Service (AKS) Automatic][what-is-aks-automatic]
+
+[kubectl]: https://kubernetes.io/docs/reference/kubectl/
+[kubectl-apply]: https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#apply
+[kubectl-get]: https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#get
+
+[outbound-rules-control-egress]: https://learn.microsoft.com/en-us/azure/aks/outbound-rules-control-egress
+[api-server-vnet-integration-availability]: https://learn.microsoft.com/en-us/azure/aks/api-server-vnet-integration#limited-availability
+[install-azure-cli]: https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
+[azure-cli-extensions]: https://learn.microsoft.com/en-us/cli/azure/azure-cli-extensions-overview
+[kubernetes-concepts]: https://learn.microsoft.com/en-us/azure/aks/concepts-clusters-workloads
+[aks-tutorial]: https://learn.microsoft.com/en-us/azure/aks/tutorial-kubernetes-prepare-app
+[azure-resource-group]: https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/overview
+[az-aks-create]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-create
+[az-aks-get-credentials]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-get-credentials
+[az-aks-install-cli]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-install-cli
+[az-aks-show]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-show
+[az-group-create]: https://learn.microsoft.com/en-us/cli/azure/group#az-group-create
+[az-group-delete]: https://learn.microsoft.com/en-us/cli/azure/group#az-group-delete
+[node-auto-provisioning]: https://learn.microsoft.com/en-us/azure/aks/node-autoprovision
+[kubernetes-deployment]: https://learn.microsoft.com/en-us/azure/aks/concepts-clusters-workloads#deployments-and-yaml-manifests
+[aks-solution-guidance]: https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/containers/aks-start-here?toc=/azure/aks/toc.json&bc=/azure/aks/breadcrumb/toc.json
+[az-feature-register]: https://learn.microsoft.com/en-us/cli/azure/feature#az-feature-register
+[az-feature-show]: https://learn.microsoft.com/en-us/cli/azure/feature#az-feature-show
+[az-provider-register]: https://learn.microsoft.com/en-us/cli/azure/provider#az-provider-register
+[what-is-aks-automatic]: https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic
+[Azure-Policy-RBAC-permissions]: https://learn.microsoft.com/en-us/azure/governance/policy/overview#azure-rbac-permissions-in-azure-policy
+[aks-entra-rbac]: https://learn.microsoft.com/en-us/azure/aks/entra-id-authorization
+[aks-entra-rbac-builtin-roles]: https://learn.microsoft.com/en-us/azure/aks/entra-id-authorization#create-role-assignments-for-cluster-access
+[availability-zones]: https://learn.microsoft.com/en-us/azure/reliability/availability-zones-region-support
+[az-network-vnet-create]: https://learn.microsoft.com/en-us/cli/azure/network/vnet#az-network-vnet-create
+[az-network-vnet-subnet-create]: https://learn.microsoft.com/en-us/cli/azure/network/vnet/subnet#az-network-vnet-subnet-create
+[az-identity-create]: https://learn.microsoft.com/en-us/cli/azure/identity#az-identity-create
+[az-role-assignment-create]: https://learn.microsoft.com/en-us/cli/azure/role/assignment#az-role-assignment-create
+[policy-for-kubernetes]: https://learn.microsoft.com/en-us/azure/governance/policy/concepts/policy-for-kubernetes#install-azure-policy-add-on-for-aks
+[concepts-network-custom-vnet]: https://learn.microsoft.com/en-us/azure/aks/concepts-network#custom-virtual-network-requirements
+[az-provider-register]: https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider
+[azure-sla]: https://www.microsoft.com/licensing/docs/view/Service-Level-Agreements-SLA-for-Online-Services
+[terraform-install-configure]: https://learn.microsoft.com/en-us/azure/developer/terraform/quickstart-configure

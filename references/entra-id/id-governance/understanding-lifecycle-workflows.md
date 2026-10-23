@@ -1,0 +1,182 @@
+# Understanding lifecycle workflows
+
+> Source: https://learn.microsoft.com/en-us/entra/id-governance/understanding-lifecycle-workflows  
+> Microsoft doc last updated: 08/21/2026
+
+
+The following document provides an overview of a workflow created using Lifecycle Workflows. Workflows automate tasks based on the joiner-mover-leaver (JML) cycle of lifecycle management, and split tasks for users into categories of where they fall in the lifecycle of an organization. These categories extend into templates, where they can be quickly customized to suit the needs of users in your organization. For more information, see: [What are Lifecycle Workflows?](https://learn.microsoft.com/en-us/entra/id-governance/what-are-lifecycle-workflows).
+
+  [](media/understanding-lifecycle-workflows/workflow-2.png#lightbox)
+
+> [!NOTE]
+> Lifecycle workflows enhances Microsoft Entra ID Governance's [HR-driven provisioning](https://learn.microsoft.com/en-us/entra/identity/app-provisioning/what-is-hr-driven-provisioning) by automating routine processes. While HR provisioning manages the creation and attribute updates of user accounts, lifecycle workflows provide additional automation of tasks.
+
+## License requirements 
+
+Using this feature requires Microsoft Entra ID Governance or Microsoft Entra Suite licenses. To find the right license for your requirements, see [Microsoft Entra ID Governance licensing fundamentals](https://learn.microsoft.com/en-us/entra/id-governance/licensing-fundamentals).
+
+## Permissions and Roles
+
+For a full list of supported delegated and application permissions required to use Lifecycle Workflows, see: [Lifecycle workflows permissions](https://learn.microsoft.com/en-us/graph/permissions-reference#lifecycle-workflows-permissions).
+
+For delegated scenarios, the admin should have at least the Lifecycle Workflows Administrator [Microsoft Entra role](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference):
+
+## Limits
+
+For a full list of Lifecycle workflow service limits, see: [Lifecycle Workflows Service Limits](https://learn.microsoft.com/en-us/entra/id-governance/governance-service-limits#lifecycle-workflows).
+
+## Parts of a workflow 
+
+A workflow can be broken down into the following three main parts:
+
+|Workflow part|Description|
+|-----|-----|
+|General information|This portion of a workflow covers basic information such as display name, and a description of what the workflow does.|
+|Tasks|Tasks are the actions that are taken when a workflow is executed.|
+|Execution conditions| Defines when (trigger), and for who (scope), a scheduled workflow runs. For more information on these two parameters, see  [Trigger details](https://learn.microsoft.com/en-us/entra/id-governance/understanding-lifecycle-workflows#trigger-details) and [Scope](https://learn.microsoft.com/en-us/entra/id-governance/understanding-lifecycle-workflows#scope).|
+
+## Templates
+
+Creating a workflow via the Microsoft Entra admin center requires the use of a template. A Lifecycle Workflow template is a framework that is used for predefined tasks, and helps automate the creation of a workflow.  
+
+  [](media/understanding-lifecycle-workflows/workflow-3.png#lightbox)
+
+The template, depending on its category, defines which tasks are available to be used, and then guides you through the creation of the workflow. The template provides input for basic description, execution conditions, and task information.  
+
+>[!NOTE]
+>Depending on the template you select, the options that will be available may vary. The images in this document use the [**Onboarding pre-hire employee**](https://learn.microsoft.com/en-us/entra/id-governance/lifecycle-workflow-templates#onboard-pre-hire-employee) template to illustrate the parts of a workflow.
+
+For more information, see [Lifecycle workflow templates.](https://learn.microsoft.com/en-us/entra/id-governance/lifecycle-workflow-templates)
+
+## Workflow overview
+
+Every workflow has its own overview section, where you can either take quick actions with the workflow, or view its details. This overview section is split into the three following parts:
+
+- Basic Information
+- My Feed
+- Quick Action
+
+In this section you learn what each section tells you, and what actions you're able to take from this information.
+
+### Basic Information
+
+When you select a workflow, the overview provides you with a list of basic details in the **Basic Information** section. These basic details provide you with information such as the workflow category, its ID, when it was modified, and when it's scheduled to run again. This information is important in providing quick details surrounding its current usage for administrative purposes. Basic information is also live data, meaning any quick action that you take on the overview page is shown immediately within this section.
+
+Within the **Basic Information** you can view the following information:
+
+ |Name|Description|
+ |-----|-----|
+ |Name|The name of the workflow.|
+ |Description|A brief description that describes the workflow.|
+ |Category|A string identifying the category of the workflow.|
+ |Date Created|The date and time the workflow was created.|
+ |Workflow ID|A unique identifier for the workflow.|
+ |Schedule|Defines if the workflow is currently scheduled to run.|
+ |Last run date|The last date and time the workflow ran.|
+ |Last Modified|The last date and time the workflow was modified.|
+
+### My Feed
+
+The **My Feed** section of the workflow overview contains a quick peek into when and how the workflow ran. This section also allows you to quickly jump to the target areas for more information. The following information is provided:
+
+- Next target run: The date and time of the next scheduled workflow run.
+- Total processed users: The total number of users processed by the workflow.
+- Processed users with failures: The total users processed with failed status by the workflow.
+- Failed tasks: The total number of failed tasks.
+- Number of tasks: The total number of tasks within the workflow.
+- Current version: How many new versions of the workflow have been created.
+
+### Quick Action
+
+The **Quick Action** section allows you to quickly take action with your workflow. These quick actions can either be making the workflow do something, or used for history or editing purposes. The following actions you can take are:
+
+- Run on Demand: Allows you to quickly run the workflow on demand. For more information on this process, see: [Run a workflow on-demand](https://learn.microsoft.com/en-us/entra/id-governance/on-demand-workflow)
+- Edit tasks: Allows you to add, delete, edit, or reorder tasks within the workflow. For more information on this process, see: [Edit the tasks of a workflow using the Microsoft Entra admin center](https://learn.microsoft.com/en-us/entra/id-governance/manage-workflow-tasks#edit-the-tasks-of-a-workflow-using-the-microsoft-entra-admin-center)
+- View Workflow History: Allows you to view the history of the workflow. For more information on the three history perspectives, see: [Lifecycle Workflows history](https://learn.microsoft.com/en-us/entra/id-governance/lifecycle-workflow-history)
+
+Actions taken from the overview of a workflow allow you to quickly complete tasks, which can normally be done via the manage section of a workflow.
+
+[](media/understanding-lifecycle-workflows/workflow-11.png#lightbox)
+
+## Workflow basics
+
+After selecting a template, on the basics screen:
+ - Provide the information that is used in the description portion of the workflow.
+ - Select the trigger that defines when the execution condition will occur.
+
+ [](media/understanding-lifecycle-workflows/workflow-4.png#lightbox)
+
+## Execution conditions
+
+On the Workflow basics screen you also get to set the first detail, the trigger, for a workflow's execution conditions. The execution conditions of a workflow define when, and for who, a workflow runs. It's made up of two distinct parts known as the trigger, and the scope.
+
+## Trigger details
+
+The trigger of a workflow defines when a scheduled workflow runs for users in scope for the workflow. The trigger of a workflow depends on the type of workflow you want to run. 
+
+The supported scheduled triggers are:
+
+- Attribute changes
+- Group membership change
+- Time based
+- Sign-in inactivity
+
+The type of workflow you choose determines which trigger you use.
+
+> [!IMPORTANT]
+> Relative time-based comparisons expand the time-based attribute trigger and are in public preview. During public preview, the Microsoft Entra admin center temporarily shows **Time based attribute** and **Time based attribute V2 (Preview)** as separate choices. Both choices represent the same time-based trigger capability, and the V2 choice can also reproduce the standard time-based behavior. At general availability, customers will see only one time-based trigger choice that includes relative comparisons. For supported comparisons and configuration details, see [Time based attribute trigger](https://learn.microsoft.com/en-us/entra/id-governance/lifecycle-workflow-execution-conditions#time-based-attribute-trigger). For more information about previews, see [Universal License Terms for Online Services](https://www.microsoft.com/licensing/terms/product/ForOnlineServices/all).
+
+## Scope
+
+The scope defines for who the scheduled workflow runs. Configuring this parameter allows you to further narrow down the users for whom the workflow is to be executed. Lifecycle Workflows supports a [rich set of user properties](https://learn.microsoft.com/en-us/graph/api/resources/identitygovernance-rulebasedsubjectset#supported-user-properties-and-query-parameters) for configuring the scope.
+
+The scope depends on the trigger that you use.
+
+- For **Attribute changes**, the trigger is rule based and triggered when the attribute you defined is changed for a user.
+- For **Group membership change**, the trigger is group-based and triggered if a user is added or removed from a specific group.
+- For **Time based attribute**, the trigger is rule based and triggered when a user's date attribute meets the configured point-in-time or relative comparison.
+- For **sign-in inactivity**, the trigger is rule-based and triggered when a user has not signed in over a specific time period.
+
+For a detailed guide on setting the execution conditions for a workflow, see: [Create a lifecycle workflow.](https://learn.microsoft.com/en-us/entra/id-governance/create-lifecycle-workflow)
+
+## Scheduling
+
+While newly created workflows are enabled by default, scheduling is an option that must be enabled manually. To verify whether the workflow is scheduled, you can view the **Scheduled** column.
+
+Once scheduling is enabled, the workflow is evaluated based on the interval that is set within your workflow settings (default of three hours) to determine whether or not it should run based on the execution conditions.
+
+ [](media/understanding-lifecycle-workflows/workflow-10.png#lightbox)
+
+>[!NOTE]
+> The standard time based attribute choice processes a user at a specific point in time based on the workflow configuration (e.g., seven days before the user’s hire date) and user account configuration. For reliable workflow execution, the user account must be configured with all relevant details (e.g., trigger and scoping attributes) in advance of the scheduled workflow execution. Once the designated time arrives, the next scheduled workflow run will process the user if it meets the execution conditions. If the workflow or user account is configured after the intended processing time (e.g., due to a delay in the HR system), Lifecycle Workflows will still attempt to process the user—provided the necessary setup is completed within three days of the original processing time. This catch-up behavior doesn't apply when you select **Time based attribute V2 (Preview)** during public preview.
+
+To view a detailed guide on  customizing the schedule of a workflow, see: [Customize the schedule of workflows](https://learn.microsoft.com/en-us/entra/id-governance/customize-workflow-schedule).
+
+### On-demand scheduling
+
+A workflow can be run on-demand for testing or in situations where it's required.
+
+Use the **Run on demand** feature to execute the workflow immediately. The workflow must be enabled before you can run it on demand.
+
+>[!NOTE]
+> A workflow that is run on demand for a user does not take into account whether or not a user meets the workflow's execution conditions. It will apply the tasks regardless of whether the execution conditions are met by the user or not.
+
+For more information, see: [Run a workflow on-demand](https://learn.microsoft.com/en-us/entra/id-governance/on-demand-workflow)
+
+##  History
+
+When you've selected a workflow, you can view its historical information through the lens of its users, runs, and tasks. Being able to view information specifically from these viewpoints allows you to quickly narrow down specific information about how a workflow was processed. 
+
+For more information, see: [Lifecycle Workflows history](https://learn.microsoft.com/en-us/entra/id-governance/lifecycle-workflow-history)
+
+## Versioning
+
+Workflow versions are separate workflows built using the same information of an original workflow, but with either the tasks or scope updated, so that they're reported differently within logs. Workflow versions can change the actions or even scope of an existing workflow.
+
+[](media/understanding-lifecycle-workflows/workflow-12.png#lightbox)
+
+For more information, see: [Lifecycle Workflows Versioning](https://learn.microsoft.com/en-us/entra/id-governance/lifecycle-workflow-versioning)
+
+## Next steps
+- [Create a custom workflow using the Microsoft Entra admin center](https://learn.microsoft.com/en-us/entra/id-governance/tutorial-onboard-custom-workflow-portal)
+- [Create a Lifecycle workflow](https://learn.microsoft.com/en-us/entra/id-governance/create-lifecycle-workflow)

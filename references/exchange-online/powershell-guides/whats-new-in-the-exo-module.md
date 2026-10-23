@@ -1,0 +1,140 @@
+# What's new in the Exchange Online PowerShell module
+
+> Source: https://learn.microsoft.com/en-us/powershell/exchange/whats-new-in-the-exo-module  
+> Microsoft doc last updated: 07/31/2026
+
+
+This article lists new features in the Exchange Online PowerShell module used for connecting to Exchange Online PowerShell, Security & Compliance PowerShell, and PowerShell for [the Built-in security add-on for on-premises mailboxes](https://learn.microsoft.com/en-us/exchange/standalone-eop/standalone-eop). Features that are currently in preview are denoted with **(preview)**.
+
+## July 2026
+
+- [Version 3.10.1](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.10.1)
+
+  For information about what's in this release, see [Version 3.10.1](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-3101).
+
+## June 2026
+
+- [Version 3.10.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.10.0)
+
+  For information about what's in this release, see [Version 3.10.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-3100).
+
+## January 2026
+
+- [Version 3.9.2](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.9.2)
+
+  For information about what's in this release, see [Version 3.9.2](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-392).
+
+## August 2025
+
+- [Version 3.9.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.9.0)
+
+  For information about what's in this release, see [Version 3.9.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-390).
+
+## May 2025
+
+- [Version 3.8.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.8.0)
+
+  For information about what's in this release, see [Version 3.8.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-380).
+
+## March 2025
+
+- [Version 3.7.2](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.7.1)
+
+  For information about what's in this release, see [Version 3.7.2](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-372).
+
+## January 2025
+
+- [Version 3.7.1](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.7.1)
+
+  For information about what's in this release, see [Version 3.7.1](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-371).
+
+## December 2024
+
+- [Version 3.7.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.7.0)
+
+  Starting with this version of the module, command line help for Exchange Online PowerShell cmdlets is no longer loaded by default. Use the _LoadCmdletHelp_ parameter in the **Connect-ExchangeOnline** command so help for Exchange Online PowerShell cmdlets is available to the **Get-Help** cmdlet.
+
+  For information about what's in this release, see [Version 3.7.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-370).
+
+## September 2024
+
+- [Version 3.6.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.6.0)
+
+  For information about what's in this release, see [Version 3.6.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-360).
+
+## July 2024
+
+- [Version 3.5.1](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.5.1) has been released.
+
+  For information about what's in this release, see [Version 3.5.1](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-351).
+
+## May 2024
+
+- [Version 3.5.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.5.0) has been released.
+
+  For information about what's in this release, see [Version 3.5.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-350).
+
+## October 2023
+
+- [Version 3.4.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.4.0)
+
+  For information about what's in this release, see [Version 3.4.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-340).
+
+## September 2023
+
+- [Version 3.3.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.3.0) has been released.
+
+  For information about what's in this release, see [Version 3.3.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-330).
+
+## June 2023
+
+- [Version 3.2.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.2.0) has been released.
+
+- [Virtually all](https://techcommunity.microsoft.com/t5/exchange-team-blog/deprecation-of-remote-powershell-rps-protocol-in-security-and/ba-p/3815432) Security & Compliance PowerShell cmdlets are now backed by the REST API, and REST API is used by default. To connect using remote PowerShell mode (which requires Basic authentication in WinRM), use the _UseRPSSession_ switch in the **Connect-IPPSSession** command.
+
+  For information about what's in this release, see [Version 3.2.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-320).
+
+## May 2023
+
+- The end of support for remote PowerShell in Security & Compliance PowerShell has been announced. For more information, see [Announcing Deprecation of Remote PowerShell (RPS) Protocol in Exchange Online PowerShell](https://techcommunity.microsoft.com/t5/exchange-team-blog/deprecation-of-remote-powershell-rps-protocol-in-security-and/ba-p/3815432).
+
+- [Version 3.2.0-Preview4](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.2.0-Preview4) has been released.
+
+  This version supports the Preview of Security & Compliance cmdlets backed by the REST API. Some, but not all cmdlets are supported. Basic authentication in WinRM is not required in Security & Compliance PowerShell for REST API cmdlets.
+
+  > [!NOTE]
+  > The default value of the _UseRPSSession_ switch in **Connect-IPSSession** is now the same as **Connect-ExchangeOnline**. To connect in REST API mode, don't use the _UseRPSSession_ switch in the **Connect-IPPSSession** command. To connect using remote PowerShell mode (which requires Basic authentication in WinRM), use the _UseRPSSession_ switch in the **Connect-IPPSSession** command.
+  >
+  > REST API connections in the EXO V3 module require the PowerShellGet and PackageManagement modules. For more information, see [PowerShellGet for REST-based connections in Windows](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#powershellget-for-rest-api-connections-in-windows).
+
+## April 2023
+
+- [Version 3.2.0-Preview3](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.2.0-Preview3) has been released.
+
+  This version supports the Preview of Security & Compliance cmdlets backed by the REST API. Some, but not all cmdlets are supported. Basic authentication in WinRM is not required in Security & Compliance PowerShell for REST API cmdlets.
+
+  > [!NOTE]
+  > The default value of the _UseRPSSession_ switch in **Connect-IPSSession** is opposite of **Connect-ExchangeOnline**. To connect in REST API mode, use `-UseRPSSession:$false` in the **Connect-IPPSSession** command. To connect using remote PowerShell mode (which requires Basic authentication in WinRM), don't use the _UseRPSSession_ switch in the **Connect-IPPSSession** command. The default behavior will change in a later version of the module as more Security & Compliance cmdlets are available in REST API mode.
+
+## January 2023
+
+- [Version 3.1.0](https://www.powershellgallery.com/packages/ExchangeOnlineManagement/3.1.0) has been released.
+
+  For information about what's in this release, see [Version 3.1.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-310).
+
+## December 2022
+
+- The end of support for remote PowerShell in Exchange Online PowerShell (not in Security & Compliance PowerShell) has been announced. For more information, see [Announcing Deprecation of Remote PowerShell (RPS) Protocol in Exchange Online PowerShell](https://aka.ms/RPSDeprecation).
+
+## September 2022
+
+- Version 3.0.0 has been released, and is now known as the Exchange Online PowerShell V3 module (abbreviated as the EXO V3 module):
+  - Version 3.0.0 is the Generally Availability (GA) release of the 2.0.6-PreviewX versions of the module.
+  - All Exchange Online PowerShell cmdlets are now backed by the REST API. Basic authentication in WinRM is not required in Exchange Online PowerShell for REST API cmdlets.
+
+    > [!TIP]
+    > REST API connections in the EXO V3 module require the PowerShellGet and PackageManagement modules. For more information, see [PowerShellGet for REST-based connections in Windows](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#powershellget-for-rest-api-connections-in-windows).
+
+  - Certificate based authentication (also known as CBA or app-only authentication) is available for Security & Compliance PowerShell.
+
+  For more information, see [REST API connections in the EXO V3 module](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#rest-api-connections-in-the-exo-v3-module) and [Version 3.0.0](https://learn.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2#version-300-preview-versions-known-as-v206-previewx).

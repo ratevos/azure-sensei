@@ -1,0 +1,61 @@
+# riskyUser resource type
+
+> Source: https://learn.microsoft.com/en-us/graph/api/resources/riskyuser?view=graph-rest-1.0  
+> Microsoft doc last updated: 08/01/2024
+
+
+Namespace: microsoft.graph
+
+Represents Microsoft Entra users who are at risk. Microsoft Entra ID continually evaluates user risk based on various signals and machine learning. This API provides programmatic access to all at-risk users in your Microsoft Entra ID.
+
+For more information about risk events, see [Microsoft Entra ID Protection](https://learn.microsoft.com/en-us/azure/active-directory/identity-protection/overview-identity-protection).
+
+>[!NOTE]
+> 1. Using the riskyUsers API requires a Microsoft Entra ID P2 license.
+> 2. The availability of risky user data is governed by the [Microsoft Entra data retention policies](https://learn.microsoft.com/en-us/azure/active-directory/reports-monitoring/reference-reports-data-retention#how-long-does-azure-ad-store-the-data).
+
+## Methods
+|Method|Return type|Description|
+|:---|:---|:---|
+|[List](../api/riskyuser-list.md)|[riskyUser](../resources/riskyuser.md) collection|Get a list of the **riskyUser** objects and their properties.|
+|[Get](../api/riskyuser-get.md)|[riskyUser](../resources/riskyuser.md)|Read the properties and relationships of a **riskyUser** object.|
+|[Confirm compromised](../api/riskyuser-confirmcompromised.md)|None|Confirm one or more **riskyUser** objects as compromised.|
+|[Confirm safe](../api/riskyuser-confirmsafe.md)|None|Confirm one or more **riskyUser** objects as safe.|
+|[Dismiss](../api/riskyuser-dismiss.md)|None|Dismiss the risk of one or more **riskyUser** objects. |
+|[List history](../api/riskyuser-list-history.md)|[riskyUserHistoryItem](../resources/riskyuserhistoryitem.md) collection|Get the **riskyUserHistoryItems** from the history navigation property.|
+
+## Properties
+|Property|Type|Description|
+|:---|:---|:---|
+|id|String|Unique ID of the user at risk.|
+|isDeleted|Boolean|Indicates whether the user is deleted. The possible values are: `true`, `false`.|
+|isProcessing|Boolean|Indicates whether the backend is processing a user's risky state.|
+|riskLastUpdatedDateTime|DateTimeOffset|The date and time that the risky user was last updated. The DateTimeOffset type represents date and time information using ISO 8601 format and is always in UTC time. For example, midnight UTC on Jan 1, 2014 is `2014-01-01T00:00:00Z`.|
+|riskLevel|riskLevel|Level of the detected risky user. The possible values are: `low`, `medium`, `high`, `hidden`, `none`, `unknownFutureValue`.|
+|riskState|riskState|State of the user's risk. The possible values are: `none`, `confirmedSafe`, `remediated`, `dismissed`, `atRisk`, `confirmedCompromised`, `unknownFutureValue`.|
+|riskDetail|[riskDetail](../resources/riskdetail.md)|Details of the detected risk.|
+|userDisplayName|String|Risky user display name.|
+|userPrincipalName|String|Risky user principal name.|
+
+## Relationships
+|Relationship|Type|Description|
+|:---|:---|:---|
+|history|[riskyUserHistoryItem](../resources/riskyuserhistoryitem.md) collection|    The activity related to user risk level change|
+
+## JSON representation
+The following JSON representation shows the resource type.
+
+``` json
+{
+  "@odata.type": "#microsoft.graph.riskyUser",
+  "id": "String (identifier)",
+  "isDeleted": "Boolean",
+  "isProcessing": "Boolean",
+  "riskLastUpdatedDateTime": "String (timestamp)",
+  "riskLevel": "String",
+  "riskState": "String",
+  "riskDetail": "String",
+  "userDisplayName": "String",
+  "userPrincipalName": "String"
+}
+```

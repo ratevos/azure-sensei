@@ -1,0 +1,160 @@
+# AKS Communication Manager
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/aks-communication-manager  
+> Microsoft doc last updated: 08/28/2025
+
+
+The Azure Kubernetes Service (AKS) communication manager streamlines notifications for all your AKS maintenance tasks by using Azure Resource Notifications and Azure Resource Graph frameworks. The communication manager gives you timely alerts on event triggers and outcomes, so that you can closely monitor your upgrades.
+
+If maintenance fails, the communication manager notifies you with the reasons for the failure. This information reduces operational hassles related to observability and follow-ups.
+
+By following the steps in this article, you can set up alerts for upgrade events on an AKS cluster. The queries filter scheduled events by cluster resource ID; they don't monitor Fleet Manager update runs. If you configure upgrades through a Fleet Manager auto-upgrade profile and strategy, see [Monitor update runs in Fleet Manager](https://learn.microsoft.com/en-us/azure/aks/articles/kubernetes-fleet/howto-monitor-update-runs).
+
+- **Auto-upgrades that you configure** on the cluster, which follow its [planned maintenance](https://learn.microsoft.com/en-us/azure/aks/planned-maintenance) window.
+- **[Platform-initiated upgrades](https://learn.microsoft.com/en-us/azure/aks/platform-initiated-upgrades)**, which AKS runs on clusters that stay on an unsupported Kubernetes version after the platform support grace period. These upgrades can occur outside your maintenance window.
+
+## Prerequisites
+
+- Configure your cluster for either the [automatic upgrade channel][aks-auto-upgrade] or the [automatic upgrade channel for nodes][aks-node-auto-upgrade].
+
+- Create a [planned maintenance window][planned-maintenance] for your configuration of automatic upgrades. The schedule can be defined inline on the cluster's maintenance configuration or linked from a shared maintenance window.
+
+## Set up the communication manager
+
+1. In the Azure portal, go to the resource.
+
+1. Select **Monitoring** > **Alerts** > **Alert Rules**, and then select **Create**.
+
+1. On the **Condition** tab, for **Signal name**, select **Custom log search**.
+
+   
+
+1. In the **Search query** box, paste one of the following custom queries. Be sure to update the `where id contains` path to reference your resources for subscription ID, resource group name, and cluster name.
+
+   The following query is for notifications of automatic upgrades for clusters:
+
+   ```console
+   arg("").containerserviceeventresources
+   | where type == "microsoft.containerservice/managedclusters/scheduledevents"
+   | where id contains "/subscriptions/<subid>/resourcegroups/<rgname>/providers/Microsoft.ContainerService/managedClusters/<clustername>"
+   | where properties has "eventStatus"
+   | extend status = substring(properties, indexof(properties, "eventStatus") + strlen("eventStatus") + 3, 50)
+   | extend status = substring(status, 0, indexof(status, ",") - 1)
+   | where status != ""
+   | where properties has "eventDetails"
+   | extend upgradeType = case(
+                              properties has "K8sVersionUpgrade",
+                              "K8sVersionUpgrade",
+                              properties has "NodeOSUpgrade",
+                              "NodeOSUpgrade",
+                              ""
+                          )
+   | extend details = parse_json(tostring(properties.eventDetails))
+   | where properties has "lastUpdateTime"
+   | extend eventTime = substring(properties, indexof(properties, "lastUpdateTime") + strlen("lastUpdateTime") + 3, 50)
+   | extend eventTime = substring(eventTime, 0, indexof(eventTime, ",") - 1)
+   | extend eventTime = todatetime(tostring(eventTime))
+   | where eventTime >= ago(30m) // Ensure this matches aggregation granularity & frequency
+   | where upgradeType == "K8sVersionUpgrade"
+   | project
+       eventTime,
+       upgradeType,
+       status,
+       properties,
+       name,
+       details
+   | order by eventTime asc
+   ```
+
+   The following query is for notifications of automatic upgrades for NodeOS:
+
+   ```console
+   arg("").containerserviceeventresources
+   | where type == "microsoft.containerservice/managedclusters/scheduledevents"
+   | where id contains "/subscriptions/<subid>/resourcegroups/<rgname>/providers/Microsoft.ContainerService/managedClusters/<clustername>"
+   | where properties has "eventStatus"
+   | extend status = substring(properties, indexof(properties, "eventStatus") + strlen("eventStatus") + 3, 50)
+   | extend status = substring(status, 0, indexof(status, ",") - 1)
+   | where status != ""
+   | where properties has "eventDetails"
+   | extend upgradeType = case(
+                              properties has "K8sVersionUpgrade",
+                              "K8sVersionUpgrade",
+                              properties has "NodeOSUpgrade",
+                              "NodeOSUpgrade",
+                              ""
+                          )
+   | extend details = parse_json(tostring(properties.eventDetails))
+   | where properties has "lastUpdateTime"
+   | extend eventTime = substring(properties, indexof(properties, "lastUpdateTime") + strlen("lastUpdateTime") + 3, 50)
+   | extend eventTime = substring(eventTime, 0, indexof(eventTime, ",") - 1)
+   | extend eventTime = todatetime(tostring(eventTime))
+   | where eventTime >= ago(30m) // Ensure this matches aggregation granularity & frequency
+   | where upgradeType == "NodeOSUpgrade"
+   | project
+       eventTime,
+       upgradeType,
+       status,
+       properties,
+       name,
+       details
+   | order by eventTime asc
+   ```
+
+1. Go to the **Condition** tab. Configure the alert conditions with the following settings:
+
+   - **Measure**: Select **Table rows**.
+   - **Aggregation type**: Select **Count**.
+   - **Aggregation granularity**: Select **30 minutes**.
+   - **Threshold value**: Keep at **0**.
+   - **Split by dimensions**: For **Dimension name**, select **status**. Then select the **Include all future values** checkbox.
+
+   
+
+1. In the **Split by dimensions** area, for **Dimension values**, select a value. Because you selected **status** for the dimension name, the available values are **Scheduled**, **Started**, **Completed**, **Canceled**, and **Failed**.
+
+   > [!NOTE]
+   > These status values appear only if your cluster previously executed automatic upgrade operations. For new clusters or for clusters that haven't undergone automatic upgrades yet, the dropdown list might appear empty or show no available dimensions. After your cluster performs its first automatic upgrade, these status values become available for selection.
+
+   
+
+1. Go to the **Actions** tab. Make sure that an action group with the correct email address exists, so that you can receive the notifications:
+
+   1. Select **Use action groups** > **Create an action group**.
+   1. For **Notification type**, select **Email/SMS_message/Push/Voice**.
+   1. Select the **Email** checkbox, and then enter the email address in the **Email** box.
+
+      
+
+1. Go to the **Details** tab. Assign a managed identity so that you can grant access to the necessary resources. In the **Identity** area, select **System assigned managed identity**.
+
+    
+
+1. Go to the **Review + create** tab, and then select **Create**.
+
+1. Now that you've created the alert rule, you can assign the appropriate roles for the managed identity:
+
+   1. In the alert rule, go to **Settings** > **Identity** > **System assigned managed identity** > **Azure role assignments**.
+   1. Select **Add role assignment**, select the **Reader** role, and assign it to the resource group.
+   1. Select **Add role assignment** again, select the **Reader** role, and assign it to the subscription.
+
+    > [!TIP]
+    > If you don't see the **Identity** option, make sure that you created your alert rule and that you have the necessary permissions.
+
+After you set up the communication manager, it sends advance notices one week before maintenance starts and one day before maintenance starts. It also sends you timely alerts during the maintenance operation.
+
+## Verify the configuration
+
+To upgrade the cluster, wait for the automatic upgrader to start. Then verify that you promptly receive notices on the email address that you configured to receive notices.
+
+Check the Azure Resource Graph database for the scheduled notification record. Each scheduled event notification should be listed as one record in the `ContainerServiceEventResources` table.
+
+## Related content
+
+- [Use planned maintenance to schedule and control upgrades for your Azure Kubernetes Service cluster][planned-maintenance]
+- [Upgrade options and recommendations for Azure Kubernetes Service clusters][upgrade-cluster]
+
+[aks-auto-upgrade]: https://learn.microsoft.com/en-us/azure/aks/auto-upgrade-cluster
+[aks-node-auto-upgrade]: https://learn.microsoft.com/en-us/azure/aks/auto-upgrade-node-os-image
+[planned-maintenance]: https://learn.microsoft.com/en-us/azure/aks/planned-maintenance
+[upgrade-cluster]: https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster

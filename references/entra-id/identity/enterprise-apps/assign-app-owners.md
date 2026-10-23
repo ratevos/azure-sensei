@@ -1,0 +1,78 @@
+# Assign enterprise application owners
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/assign-app-owners  
+> Microsoft doc last updated: 12/06/2024
+
+
+An [owner of an enterprise application](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/overview-assign-app-owners) in Microsoft Entra ID can manage the organization-specific configuration of the application, such as single sign-on, provisioning, and user assignments. An owner can also add or remove other owners. Unlike other Application Administrators, owners can manage only the enterprise applications they own. In this article, you learn how to assign an owner of an application.
+
+## Prerequisites
+
+To add an enterprise application to your Microsoft Entra tenant, you need:
+
+- A Microsoft Entra user account. If you don't already have one, you can [Create an account for free](https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn).
+- One of the following roles: Cloud Application Administrator, or Application Administrator.
+
+## Assign an owner
+
+:::zone pivot="portal"
+
+To assign an owner to an enterprise application:
+
+1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) as at least a [Cloud Application Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#cloud-application-administrator). 
+1. Browse to **Entra ID** > **Enterprise apps** > **All applications**.
+1. Select the application that you want to add an owner to.
+1. Select **Owners**, and then select **Add** to get a list of user accounts that you can choose an owner from.
+1. Search for and select the user account that you want to be an owner of the application.
+1. Select **Select** to add the user account that you chose as an owner of the application.
+
+:::zone-end
+
+:::zone pivot="ms-powershell"
+
+To add an owner to an enterprise application using Microsoft Graph PowerShell, you need to sign in as at least a [Cloud Application Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#cloud-application-administrator) and consent to the `Application.ReadWrite.All` permission.
+
+In the following example, the user's object ID is aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb and the applicationId is 00001111-aaaa-2222-bbbb-3333cccc4444.
+
+```powershell
+1. Connect-MgGraph -Scopes 'Application.ReadWrite.All'
+
+1. Import-Module Microsoft.Graph.Applications
+
+$params = @{
+    "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb"
+}
+
+New-MgServicePrincipalOwnerByRef -ServicePrincipalId 'aaaaaaaa-bbbb-cccc-1111-222222222222' -BodyParameter $params
+```
+
+:::zone-end
+
+:::zone pivot="ms-graph"
+
+To assign an owner to an application using Microsoft Graph API, sign in to [Graph Explorer](https://developer.microsoft.com/graph/graph-explorer) as at least a [Cloud Application Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#cloud-application-administrator).
+
+You need to consent to the `Application.ReadWrite.All` permission.
+
+Run the following Microsoft Graph query to assign an owner to an application. You need the object ID of the user you want to assign the application to. In the following example, the user's object ID is aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb and the appId is 00001111-aaaa-2222-bbbb-3333cccc4444.
+
+```http
+POST https://graph.microsoft.com/v1.0/servicePrincipals(appId='00001111-aaaa-2222-bbbb-3333cccc4444')/owners/$ref
+Content-Type: application/json
+
+{
+    "@odata.id": "https://graph.microsoft.com/v1.0/directoryObjects/aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb"
+}
+```
+
+:::zone-end
+
+> [!NOTE]
+> If the user setting **Restrict access to Microsoft Entra administration portal** is set to `Yes`, non-admin users aren't able to use the Microsoft Entra admin center to manage the applications they own. For more information about the actions that can be performed on owned enterprise applications, see [Owned enterprise applications](https://learn.microsoft.com/en-us/entra/fundamentals/users-default-permissions#owned-enterprise-applications).
+
+> [!NOTE]
+> Currently due to background applications and service principals objects settings dependencies, the application owners added by other than Entra admin center means (Graph API, PowerShell), will not be able to manage some enterprise applications settings like attributes and claims, modify configured SAML certificates properties or token encryption settings, etc. 
+
+## Next steps
+
+- [Delegate app registration permissions in Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/delegate-app-roles)

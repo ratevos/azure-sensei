@@ -1,0 +1,742 @@
+# Access Azure Key Vault with the CSI Driver Identity Provider
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-identity-access  
+> Microsoft doc last updated: 09/02/2026
+
+
+The Secrets Store Container Storage Interface (CSI) Driver on Azure Kubernetes Service (AKS) provides various methods of identity-based access to your Azure Key Vault. This article outlines these methods and best practices for when to use Azure role-based access control (Azure RBAC) or OpenID Connect (OIDC) security models to access your key vault and AKS cluster.
+
+You can use one of the following access methods:
+
+- Service Connector with managed identity
+- Workload ID
+- Workload ID with identity bindings
+- User-assigned managed identity
+
+::: zone pivot="access-with-service-connector"
+
+Learn how to connect to Azure Key Vault with the Secrets Store CSI Driver in an Azure Kubernetes Service (AKS) cluster using Service Connector. In this article, you complete the following tasks:
+
+>
+> * Register the required Azure resource providers.
+> * Create a connection between the AKS cluster and the Azure Key Vault with Service Connector.
+> * Create a `SecretProviderClass` CRD and a `Pod` that consumes the CSI provider to test the connection.
+> * Verify that the pod can access the key vault secret.
+
+## Prerequisites
+
+* An Azure account with an active subscription. [Create an account for free](https://azure.microsoft.com/pricing/purchase-options/azure-account?cid=msft_learn).
+* The [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli). Sign in using the [`az login`][az-login] command.
+* [Docker](https://docs.docker.com/get-docker/) and [kubectl](https://kubernetes.io/docs/tasks/tools/). To install kubectl locally, use the [`az aks install-cli`][az-aks-install-cli] command.
+* A basic understanding of containers and AKS. Get started by [preparing an application for AKS](https://learn.microsoft.com/en-us/azure/aks/tutorial-kubernetes-prepare-app).
+* Before you begin, make sure you finish the steps in [Use the Azure Key Vault provider for Secrets Store CSI Driver in an Azure Kubernetes Service (AKS) cluster](https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-driver) to enable the Azure Key Vault Secrets Store CSI Driver in your AKS cluster.
+
+## Initial set-up
+
+1. If you're using Service Connector for the first time, start by running the command [az provider register](https://learn.microsoft.com/en-us/cli/azure/provider#az-provider-register) to register the Service Connector and Kubernetes Configuration resource providers.
+
+   ```azurecli
+   az provider register -n Microsoft.ServiceLinker
+   ```
+   ```azurecli
+   az provider register -n Microsoft.KubernetesConfiguration
+   ```
+
+   > [!TIP]
+   > You can check if these resource providers have already been registered by running the commands `az provider show -n "Microsoft.ServiceLinker" --query registrationState` and `az provider show -n "Microsoft.KubernetesConfiguration" --query registrationState`.
+
+1. Optionally, use the Azure CLI command to get a list of supported target services for AKS cluster.
+
+   ```azurecli
+   az aks connection list-support-types --output table
+   ```
+
+## Create a service connection in AKS with Service Connector
+
+You can create a service connection to Azure Key Vault using the Azure portal or Azure CLI.
+
+### [Azure portal](#tab/azure-portal)
+
+1. In the Azure portal, navigate to your AKS cluster resource.
+1. From the service menu, under **Settings**, select **Service Connector** > **Create**.
+1. On the **Create connection** page, configure the following settings in the **Basics** tab:
+
+    * **Kubernetes namespace**: Select **default**.
+    * **Service type**: Select **Key Vault** and select the checkbox to enable the Azure Key Vault CSI Provider.
+    * **Connection name**: Enter a name for the connection.
+    * **Subscription**: Select the subscription that contains the key vault.
+    * **Key vault**: Select the key vault you created.
+    * **Client type**: Select **None**.
+
+1. Select **Review + create**, and then select **Create** to create the connection.
+
+### [Azure CLI](#tab/azure-cli)
+
+* Create a connection to your key vault using the [`az aks connection create keyvault`][az-aks-connection-create-keyvault] command.
+
+    ```azurecli-interactive
+    az aks connection create keyvault \
+        --connection <connection-name> \
+        --resource-group <resource-group-of-cluster> \
+        --name <cluster-name> \
+        --target-resource-group <resource-group-of-key-vault> \
+        --vault <key-vault-name> \
+        --enable-csi \
+        --client-type none
+   ```
+
+---
+
+## Test the connection
+
+### Clone the sample repo and deploy manifest files
+
+1. Clone the sample repository using the `git clone` command.
+
+   ```bash
+   git clone https://github.com/Azure-Samples/serviceconnector-aks-samples.git
+   ```
+
+1. Change directories to the Azure Key Vault CSI provider sample.
+
+   ```bash
+   cd serviceconnector-aks-samples/azure-keyvault-csi-provider
+   ```
+
+1. In the `secret_provider_class.yaml` file, replace the following placeholders with your Azure Key Vault information:
+
+   * Replace `<AZURE_KEYVAULT_NAME>` with the name of the key vault you created and connected.
+   * Replace `<AZURE_KEYVAULT_TENANTID>` with the tenant ID of the key vault.
+   * Replace `<AZURE_KEYVAULT_CLIENTID>` with identity client ID of the `azureKeyvaultSecretsProvider` add-on.
+   * Replace `<KEYVAULT_SECRET_NAME>` with the key vault secret you created. For example, `ExampleSecret`.
+
+1. Deploy the `SecretProviderClass` CRD using the `kubectl apply` command.
+
+   ```bash
+   kubectl apply -f secret_provider_class.yaml
+   ```
+
+1. Deploy the `Pod` manifest file using the `kubectl apply` command.
+
+    The command creates a pod named `sc-demo-keyvault-csi` in the default namespace of your AKS cluster.
+
+   ```bash
+   kubectl apply -f pod.yaml
+   ```
+
+### Verify the connection
+
+1. Verify the pod was created successfully using the `kubectl get` command.
+
+   ```bash
+   kubectl get pod/sc-demo-keyvault-csi
+   ```
+
+    After the pod starts, the mounted content at the volume path specified in your deployment YAML is available.
+
+1. Show the secrets held in the secrets store using the `kubectl exec` command.
+
+   ```bash
+   kubectl exec sc-demo-keyvault-csi -- ls /mnt/secrets-store/
+   ```
+
+1. Display a secret using the `kubectl exec` command.
+
+    This example command shows a test secret named `ExampleSecret`.
+
+   ```bash
+   kubectl exec sc-demo-keyvault-csi -- cat /mnt/secrets-store/ExampleSecret
+   ```
+
+[az-group-create]: https://learn.microsoft.com/en-us/cli/azure/group#az-group-create
+[az-aks-create]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-create
+[az-aks-get-credentials]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-get-credentials
+[az-keyvault-create]: https://learn.microsoft.com/en-us/cli/azure/keyvault#az-keyvault-create
+[az-keyvault-secret-set]: https://learn.microsoft.com/en-us/cli/azure/keyvault/secret#az-keyvault-secret-set
+[az-aks-connection-create-keyvault]: https://learn.microsoft.com/en-us/cli/azure/aks/connection/create#az-aks-connection-create-keyvault
+[az-login]: https://learn.microsoft.com/en-us/cli/azure/reference-index#az-login
+[az-aks-install-cli]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-install-cli
+
+::: zone-end
+
+::: zone pivot="access-with-a-microsoft-entra-workload-identity"
+
+## Prerequisites for CSI Driver with workload identity
+
+- Before you begin, make sure you finish the steps in [Use the Azure Key Vault provider for Secrets Store CSI Driver in an Azure Kubernetes Service (AKS) cluster][csi-secrets-store-driver] to enable the Azure Key Vault Secrets Store CSI Driver in your AKS cluster.
+- Microsoft Entra Workload ID supports both Windows and Linux clusters.
+
+## Access with a Microsoft Entra Workload ID
+
+A [Microsoft Entra Workload ID][workload-identity] is an identity that an application or service uses to authenticate itself against other Azure services, such as workloads in software. The Secrets Store CSI Driver integrates with native Kubernetes capabilities to federate with external identity providers.
+
+In this security model, the AKS cluster acts as the token issuer. When the Secrets Store CSI Driver mounts the volume, it requests a Kubernetes service account token, and the Azure Key Vault provider exchanges that token for a Microsoft Entra token. The application reads the mounted files and doesn't need the Azure Identity client library or the Microsoft Authentication Library (MSAL) for this volume-mount flow. If the application independently requests Microsoft Entra tokens to call protected APIs, use Azure Identity or MSAL in the application.
+
+The Azure Key Vault provider for Secrets Store CSI Driver add-on also supports [identity bindings][identity-bindings]. Identity bindings let multiple AKS clusters use the same user-assigned managed identity (UAMI) with a single federated identity credential. This support helps you scale Key Vault access across clusters without reaching the federated identity credential limit. To configure this access method, [set up an identity binding][identity-bindings-setup] between the UAMI and each AKS cluster.
+
+> [!NOTE]
+>
+> - This authentication method replaces Microsoft Entra pod-managed identity (preview). The open source Microsoft Entra pod-managed identity (preview) in Azure Kubernetes Service was deprecated as of October 24, 2022.
+> - Microsoft Entra Workload ID supports both Windows and Linux clusters.
+
+### Configure workload identity
+
+1. Set your subscription using the [`az account set`][az-account-set] command.
+
+    ```azurecli-interactive
+    export SUBSCRIPTION_ID=<subscription id>
+    export RESOURCE_GROUP=<resource group name>
+    export UAMI=<name for user assigned identity>
+    export KEYVAULT_NAME=<existing keyvault name>
+    export CLUSTER_NAME=<aks cluster name>
+
+    az account set --subscription $SUBSCRIPTION_ID
+    ```
+
+1. Create a managed identity using the [`az identity create`][az-identity-create] command.
+
+    > [!NOTE]
+    > This step assumes you have an existing AKS cluster with workload identity enabled. If workload identity isn't enabled, see [Enable workload identity on an existing AKS cluster](https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster#enable-oidc-issuer-and-microsoft-entra-workload-id-on-an-aks-cluster) to enable it.
+
+    ```azurecli-interactive
+    az identity create --name $UAMI --resource-group $RESOURCE_GROUP
+
+    export USER_ASSIGNED_CLIENT_ID="$(az identity show --resource-group $RESOURCE_GROUP --name $UAMI --query 'clientId' -o tsv)"
+    export KEYVAULT_TENANT_ID="$(az keyvault show --name $KEYVAULT_NAME --query properties.tenantId -o tsv)"
+    ```
+
+1. Create a role assignment that grants the workload identity permission to access the key vault secrets, access keys, and certificates using the [`az role assignment create`][az-role-assignment-create] command.
+
+    > [!IMPORTANT]
+    >
+    > - If you set your key vault with `--enable-rbac-authorization` and you're using `key` or `cert` type, assign the [`Key Vault Certificate User`](https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide#azure-built-in-roles-for-key-vault-data-plane-operations) role to give permissions.
+    > - If your key vault is set with `--enable-rbac-authorization` and you're using `secret` type, assign the [`Key Vault Secrets User`](https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide#azure-built-in-roles-for-key-vault-data-plane-operations) role.
+    > - If your key vault isn't set with `--enable-rbac-authorization`, you can use the [`az keyvault set-policy`][az-keyvault-set-policy] command with the `--key-permissions get`, `--certificate-permissions get`, or `--secret-permissions get` parameter to create a key vault policy to grant access for keys, certificates, or secrets. For example:
+    >
+    > ```azurecli-interactive
+    > az keyvault set-policy --name $KEYVAULT_NAME --key-permissions get --secret-permissions get --object-id <identity-object-id>
+    > ```
+
+    ```azurecli-interactive
+    export KEYVAULT_SCOPE=$(az keyvault show --name $KEYVAULT_NAME --query id -o tsv)
+
+    # Example commands for a key vault with Azure RBAC enabled using `key` and `secret` types
+    az role assignment create --role "Key Vault Certificate User" --assignee $USER_ASSIGNED_CLIENT_ID --scope $KEYVAULT_SCOPE
+    az role assignment create --role "Key Vault Secrets User" --assignee $USER_ASSIGNED_CLIENT_ID --scope $KEYVAULT_SCOPE
+    ```
+
+1. Get the AKS cluster OIDC Issuer URL using the [`az aks show`][az-aks-show] command.
+
+    > [!NOTE]
+    > This step assumes you have an existing AKS cluster with the OIDC Issuer URL enabled. If the OIDC Issuer URL isn't enabled, see [Update an AKS cluster with OIDC Issuer](https://learn.microsoft.com/en-us/azure/aks/use-oidc-issuer#enable-oidc-issuer-on-an-existing-aks-standard-cluster) to enable it.
+
+    ```bash
+    export AKS_OIDC_ISSUER="$(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --query "oidcIssuerProfile.issuerUrl" -o tsv)"
+    echo $AKS_OIDC_ISSUER
+    ```
+
+1. Create a Kubernetes service account for the workload. Update the values for `SERVICE_ACCOUNT_NAME` and `SERVICE_ACCOUNT_NAMESPACE` with the Kubernetes service account name and its namespace.
+
+    ```bash
+    export SERVICE_ACCOUNT_NAME="workload-identity-sa"  # sample name; can be changed
+    export SERVICE_ACCOUNT_NAMESPACE="default" # can be changed to namespace of your workload
+
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      annotations:
+        azure.workload.identity/client-id: ${USER_ASSIGNED_CLIENT_ID}
+      name: ${SERVICE_ACCOUNT_NAME}
+      namespace: ${SERVICE_ACCOUNT_NAMESPACE}
+    EOF
+    ```
+
+1. Create the federated identity credential between the managed identity, service account issuer, and subject using the [`az identity federated-credential create`][az-identity-federated-credential-create] command.
+
+    ```bash
+    export FEDERATED_IDENTITY_NAME="aksfederatedidentity" # can be changed as needed
+
+    az identity federated-credential create --name $FEDERATED_IDENTITY_NAME --identity-name $UAMI --resource-group $RESOURCE_GROUP --issuer ${AKS_OIDC_ISSUER} --subject system:serviceaccount:${SERVICE_ACCOUNT_NAMESPACE}:${SERVICE_ACCOUNT_NAME}
+    ```
+
+1. Deploy a `SecretProviderClass` using the `kubectl apply` command and the following YAML script.
+
+    The following parameters configure workload identity access:
+
+    - `usePodIdentity`: Set to `"false"` when using workload identity.
+    - `clientID`: Set to `${USER_ASSIGNED_CLIENT_ID}`, the client ID of the user-assigned managed identity used for workload identity.
+    - `cloudName`: Optional. Leave empty to use the default `AzurePublicCloud` environment.
+    - `objectType`: Set to the type of Key Vault object to mount. Valid values are `secret`, `key`, and `cert`.
+    - `tenantId`: Set to the tenant ID that contains the key vault.
+
+    ```bash
+    cat <<EOF | kubectl apply -f -
+    # This is a SecretProviderClass example using workload identity to access your key vault
+    apiVersion: secrets-store.csi.x-k8s.io/v1
+    kind: SecretProviderClass
+    metadata:
+      name: azure-kvname-wi # needs to be unique per namespace
+      namespace: ${SERVICE_ACCOUNT_NAMESPACE}
+    spec:
+      provider: azure
+      parameters:
+        usePodIdentity: "false"
+        clientID: "${USER_ASSIGNED_CLIENT_ID}" # Setting this to use workload identity
+        keyvaultName: ${KEYVAULT_NAME}       # Set to the name of your key vault
+        cloudName: ""                         # [OPTIONAL for Azure] if not provided, the Azure environment defaults to AzurePublicCloud
+        objects:  |
+          array:
+            - |
+              objectName: secret1             # Set to the name of your secret
+              objectType: secret              # object types: secret, key, or cert
+              objectVersion: ""               # [OPTIONAL] object versions, default to latest if empty
+            - |
+              objectName: key1                # Set to the name of your key
+              objectType: key
+              objectVersion: ""
+        tenantId: "${KEYVAULT_TENANT_ID}"     # The tenant ID of the key vault
+    EOF
+    ```
+
+    > [!NOTE]
+    > If you use `objectAlias` instead of `objectName`, update the YAML script to account for it.
+
+    > [!NOTE]
+    > In order for the `SecretProviderClass` to function properly, make sure to populate your Azure Key Vault with secrets, keys, or certificates before referencing them in the `objects` section.
+
+1. Deploy a sample pod using the `kubectl apply` command and the following YAML script.
+
+    ```bash
+    cat <<EOF | kubectl apply -f -
+    # This is a sample pod definition for using SecretProviderClass and workload identity to access your key vault
+    kind: Pod
+    apiVersion: v1
+    metadata:
+      name: busybox-secrets-store-inline-wi
+      namespace: ${SERVICE_ACCOUNT_NAMESPACE}
+      labels:
+        azure.workload.identity/use: "true"
+    spec:
+      serviceAccountName: ${SERVICE_ACCOUNT_NAME}
+      containers:
+        - name: busybox
+          image: registry.k8s.io/e2e-test-images/busybox:1.29-4
+          command:
+            - "/bin/sleep"
+            - "10000"
+          volumeMounts:
+          - name: secrets-store01-inline
+            mountPath: "/mnt/secrets-store"
+            readOnly: true
+      volumes:
+        - name: secrets-store01-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "azure-kvname-wi"
+    EOF
+    ```
+## Validate Key Vault secrets with workload identity
+
+After the pod starts, the mounted content at `/mnt/secrets-store` is available. Use the following commands to validate your secrets and print a test secret.
+
+1. Show secrets held in the secrets store using the following command.
+
+    ```bash
+    kubectl exec --namespace $SERVICE_ACCOUNT_NAMESPACE busybox-secrets-store-inline-wi -- ls /mnt/secrets-store/
+    ```
+
+1. Display a secret in the store using the following command. This example command shows the test secret `secret1`.
+
+    ```bash
+    kubectl exec --namespace $SERVICE_ACCOUNT_NAMESPACE busybox-secrets-store-inline-wi -- cat /mnt/secrets-store/secret1
+    ```
+
+::: zone-end
+
+::: zone pivot="access-with-a-user-assigned-managed-identity"
+
+## Prerequisites for CSI Driver with managed identity
+
+- Before you begin, make sure you finish the steps in [Use the Azure Key Vault provider for Secrets Store CSI Driver in an Azure Kubernetes Service (AKS) cluster][csi-secrets-store-driver] to enable the Azure Key Vault Secrets Store CSI Driver in your AKS cluster.
+
+## Access with managed identity
+
+This method uses the user-assigned managed identity that AKS automatically creates when you enable the Azure Key Vault provider for Secrets Store CSI Driver. The identity is named `azurekeyvaultsecretsprovider-xxxxx`, is stored in the node resource group, and is assigned to the virtual machine scale set.
+
+A [Microsoft Entra managed identity][managed-identity] enables an Azure resource or workload to authenticate to services that support Microsoft Entra authentication without storing credentials in code. Grant this identity the appropriate Key Vault data-plane permissions through Azure RBAC or access policies, and then use it in the following steps.
+
+Choose the tab that matches how you created your AKS cluster and key vault in [Use the Azure Key Vault provider for Secrets Store CSI Driver in an Azure Kubernetes Service (AKS) cluster][csi-secrets-store-driver]. If you deployed the tested Terraform sample, it already grants the add-on identity the `Key Vault Secrets User` role, so skip the manual role assignment step.
+
+### [Azure CLI](#tab/azure-cli)
+
+#### Configure managed identity
+
+1. Access your key vault using the [`az aks show`][az-aks-show] command and the user-assigned managed identity created by the add-on. You should also retrieve the identity's `clientId`, which you use in later steps when creating a `SecretProviderClass`.
+
+    ```azurecli-interactive
+    export RESOURCE_GROUP=<resource-group>
+    export CLUSTER_NAME=<cluster-name>
+    export KEYVAULT_NAME=<key-vault-name>
+
+    export IDENTITY_OBJECT_ID=$(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --query addonProfiles.azureKeyvaultSecretsProvider.identity.objectId -o tsv)
+    export USER_ASSIGNED_CLIENT_ID=$(az aks show --resource-group $RESOURCE_GROUP --name $CLUSTER_NAME --query addonProfiles.azureKeyvaultSecretsProvider.identity.clientId -o tsv)
+    ```
+
+    Alternatively, you can create a new managed identity and assign it to your virtual machine (VM) scale set or to each VM instance in your availability set.
+
+    ```azurecli-interactive
+    export USER_ASSIGNED_IDENTITY_NAME=<identity-name>
+
+    az identity create --resource-group $RESOURCE_GROUP --name $USER_ASSIGNED_IDENTITY_NAME
+
+    export IDENTITY_RESOURCE_ID=$(az identity show --resource-group $RESOURCE_GROUP --name $USER_ASSIGNED_IDENTITY_NAME --query id -o tsv)
+    export IDENTITY_OBJECT_ID=$(az identity show --resource-group $RESOURCE_GROUP --name $USER_ASSIGNED_IDENTITY_NAME --query principalId -o tsv)
+    export USER_ASSIGNED_CLIENT_ID=$(az identity show --resource-group $RESOURCE_GROUP --name $USER_ASSIGNED_IDENTITY_NAME --query clientId -o tsv)
+    ```
+
+    For a VM scale set-based cluster, assign the identity to the VM scale set.
+
+    ```azurecli-interactive
+    az vmss identity assign --resource-group <node-resource-group> --name <agent-pool-vmss> --identities $IDENTITY_RESOURCE_ID
+    ```
+
+    For an availability set-based cluster, assign the identity to each VM instance in the availability set.
+
+    ```azurecli-interactive
+    az vm identity assign --resource-group <node-resource-group> --name <agent-pool-vm> --identities $IDENTITY_RESOURCE_ID
+    ```
+
+1. Create a role assignment that grants the identity permission to access the key vault secrets, access keys, and certificates using the [`az role assignment create`][az-role-assignment-create] command.
+
+    > [!IMPORTANT]
+    >
+    > - If you set your key vault with `--enable-rbac-authorization` and you're using `key` or `cert` type, assign the [`Key Vault Certificate User`](https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide#azure-built-in-roles-for-key-vault-data-plane-operations) role.
+    > - If your key vault is set with `--enable-rbac-authorization` and you're using `secret` type, assign the [`Key Vault Secrets User`](https://learn.microsoft.com/en-us/azure/key-vault/general/rbac-guide#azure-built-in-roles-for-key-vault-data-plane-operations) role.
+    > - If your key vault isn't set with `--enable-rbac-authorization`, you can use the [`az keyvault set-policy`][az-keyvault-set-policy] command with the `--key-permissions get`, `--certificate-permissions get`, or `--secret-permissions get` parameter to create a key vault policy to grant access for keys, certificates, or secrets. For example:
+    >
+    > ```azurecli-interactive
+    > az keyvault set-policy --name $KEYVAULT_NAME --key-permissions get --secret-permissions get --object-id $IDENTITY_OBJECT_ID
+    > ```
+
+    ```azurecli-interactive
+    export KEYVAULT_SCOPE=$(az keyvault show --name $KEYVAULT_NAME --query id -o tsv)
+
+    # Example commands for a key vault with Azure RBAC enabled using `key` and `secret` types
+    az role assignment create --role "Key Vault Certificate User" --assignee-object-id $IDENTITY_OBJECT_ID --assignee-principal-type ServicePrincipal --scope $KEYVAULT_SCOPE
+    az role assignment create --role "Key Vault Secrets User" --assignee-object-id $IDENTITY_OBJECT_ID --assignee-principal-type ServicePrincipal --scope $KEYVAULT_SCOPE
+    ```
+
+1. Create a `SecretProviderClass` using the identity client ID. Make sure to use your own values for the objects to retrieve from your key vault.
+
+    The following parameters configure user-assigned managed identity access:
+
+    - `usePodIdentity`: Set to `"false"` when using managed identity.
+    - `useVMManagedIdentity`: Set to `"true"` to enable managed identity mode.
+    - `userAssignedIdentityID`: Set to the client ID of the user-assigned managed identity.
+    - `tenantId`: Set to the tenant ID that contains the key vault.
+
+    ```bash
+    export KEYVAULT_TENANT_ID=$(az keyvault show --name $KEYVAULT_NAME --query properties.tenantId -o tsv)
+
+    cat <<EOF > secretproviderclass.yaml
+    # This is a SecretProviderClass example using user-assigned identity to access your key vault
+    apiVersion: secrets-store.csi.x-k8s.io/v1
+    kind: SecretProviderClass
+    metadata:
+      name: azure-kvname-user-msi
+    spec:
+      provider: azure
+      parameters:
+        usePodIdentity: "false"
+        useVMManagedIdentity: "true"          # Set to true for using managed identity
+        userAssignedIdentityID: ${USER_ASSIGNED_CLIENT_ID} # Set the client ID of the user-assigned managed identity to use
+        keyvaultName: ${KEYVAULT_NAME}         # Set to the name of your key vault
+        cloudName: ""                         # [OPTIONAL for Azure] if not provided, the Azure environment defaults to AzurePublicCloud
+        objects:  |
+          array:
+            - |
+              objectName: secret1
+              objectType: secret              # object types: secret, key, or cert
+              objectVersion: ""               # [OPTIONAL] object versions, default to latest if empty
+            - |
+              objectName: key1
+              objectType: key
+              objectVersion: ""
+        tenantId: ${KEYVAULT_TENANT_ID}       # The tenant ID of the key vault
+    EOF
+    ```
+
+    > [!NOTE]
+    > If you use `objectAlias` instead of `objectName`, make sure to update the YAML script.
+
+    > [!NOTE]
+    > In order for the `SecretProviderClass` to function properly, make sure to populate your Azure Key Vault with secrets, keys, or certificates before referencing them in the `objects` section.
+
+1. Apply the `SecretProviderClass` to your cluster using the `kubectl apply` command.
+
+    ```bash
+    kubectl apply -f secretproviderclass.yaml
+    ```
+
+1. Create a pod manifest named `pod.yaml` using the following command.
+
+    ```bash
+    cat <<EOF > pod.yaml
+    # This is a sample pod definition for using SecretProviderClass and the user-assigned identity to access your key vault
+    kind: Pod
+    apiVersion: v1
+    metadata:
+      name: busybox-secrets-store-inline-user-msi
+    spec:
+      containers:
+        - name: busybox
+          image: registry.k8s.io/e2e-test-images/busybox:1.29-4
+          command:
+            - "/bin/sleep"
+            - "10000"
+          volumeMounts:
+          - name: secrets-store01-inline
+            mountPath: "/mnt/secrets-store"
+            readOnly: true
+      volumes:
+        - name: secrets-store01-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "azure-kvname-user-msi"
+    EOF
+    ```
+
+1. Apply the pod to your cluster using the `kubectl apply` command.
+
+    ```bash
+    kubectl apply -f pod.yaml
+    ```
+
+#### Validate Key Vault secrets with managed identity
+
+After the pod starts, the mounted content at `/mnt/secrets-store` is available. Use the following commands to validate your secrets and print a test secret.
+
+1. Show secrets held in the secrets store using the following command.
+
+    ```bash
+    kubectl exec busybox-secrets-store-inline-user-msi -- ls /mnt/secrets-store/
+    ```
+
+1. Display a secret in the store using the following command. This example command shows the test secret `secret1`.
+
+    ```bash
+    kubectl exec busybox-secrets-store-inline-user-msi -- cat /mnt/secrets-store/secret1
+    ```
+
+### [Terraform](#tab/terraform)
+
+#### Prerequisites
+
+- Terraform 1.6 or later.
+- Azure CLI, installed and signed in. [Install the latest version](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
+- `kubectl`, connected to your cluster with the [`az aks get-credentials`][az-aks-get-credentials] command.
+
+#### Configure managed identity
+
+The tested Terraform sample creates the resource group, AKS cluster with the Azure Key Vault provider for Secrets Store CSI Driver enabled, Azure Key Vault, `ExampleSecret`, and a role assignment that grants the add-on's managed identity the `Key Vault Secrets User` role on the key vault. If you already deployed the sample from [Use the Azure Key Vault provider for Secrets Store CSI Driver in an Azure Kubernetes Service (AKS) cluster][csi-secrets-store-driver], reuse that working directory and skip ahead to setting the variables.
+
+1. Create a `main.tf` file and copy the following tested sample configuration into it. The [Azure Terraform GitHub repository][terraform-sample] maintains the sample.
+
+    [!code-terraform[master](https://learn.microsoft.com/en-us/azure/aks/terraform_samples/quickstart/101-aks-access-keyvault/main.tf)]
+
+1. Initialize, validate, and apply the configuration.
+
+    ```bash
+    terraform init
+    terraform fmt
+    terraform validate
+    terraform plan
+    terraform apply
+    ```
+
+1. Set the variables used in the remaining commands from the Terraform outputs.
+
+    ```bash
+    export RESOURCE_GROUP=$(terraform output -raw resource_group_name)
+    export CLUSTER_NAME=$(terraform output -raw aks_cluster_name)
+    export KEYVAULT_NAME=$(terraform output -raw key_vault_name)
+    export KEYVAULT_SECRET_NAME=$(terraform output -raw key_vault_secret_name)
+    export USER_ASSIGNED_CLIENT_ID=$(terraform output -raw aks_csi_client_id)
+    export IDENTITY_OBJECT_ID=$(terraform output -raw aks_csi_object_id)
+    export KEYVAULT_TENANT_ID=$(terraform output -raw tenant_id)
+    ```
+
+    > [!NOTE]
+    > The sample already creates the role assignment that grants `$IDENTITY_OBJECT_ID` the `Key Vault Secrets User` role on the key vault. Don't repeat the `az role assignment create` step from the Azure CLI tab for this identity and key vault—the sample already did it for you.
+
+1. Create a `SecretProviderClass` using the identity client ID and secret name from the Terraform outputs.
+
+    The following parameters configure user-assigned managed identity access:
+
+    - `usePodIdentity`: Set to `"false"` when using managed identity.
+    - `useVMManagedIdentity`: Set to `"true"` to enable managed identity mode.
+    - `userAssignedIdentityID`: Set to the client ID of the user-assigned managed identity.
+    - `tenantId`: Set to the tenant ID that contains the key vault.
+
+    ```bash
+    cat <<EOF > secretproviderclass.yaml
+    # This is a SecretProviderClass example using the add-on's managed identity, created by the Terraform sample, to access your key vault
+    apiVersion: secrets-store.csi.x-k8s.io/v1
+    kind: SecretProviderClass
+    metadata:
+      name: azure-kvname-user-msi
+    spec:
+      provider: azure
+      parameters:
+        usePodIdentity: "false"
+        useVMManagedIdentity: "true"          # Set to true for using managed identity
+        userAssignedIdentityID: ${USER_ASSIGNED_CLIENT_ID} # Set to the client ID of the user-assigned managed identity to use
+        keyvaultName: ${KEYVAULT_NAME}         # Set to the name of your key vault
+        cloudName: ""                         # [OPTIONAL for Azure] if not provided, the Azure environment defaults to AzurePublicCloud
+        objects:  |
+          array:
+            - |
+              objectName: ${KEYVAULT_SECRET_NAME}
+              objectType: secret              # object types: secret, key, or cert
+              objectVersion: ""               # [OPTIONAL] object versions, default to latest if empty
+        tenantId: ${KEYVAULT_TENANT_ID}       # The tenant ID of the key vault
+    EOF
+    ```
+
+    > [!NOTE]
+    > The sample only creates a `secret` type object. For `key` or `cert` type coverage, see [Obtain certificates and keys](#obtain-certificates-and-keys).
+
+1. Apply the `SecretProviderClass` to your cluster by using the `kubectl apply` command.
+
+    ```bash
+    kubectl apply -f secretproviderclass.yaml
+    ```
+
+1. Create a pod manifest named `pod.yaml` by using the following command.
+
+    ```bash
+    cat <<EOF > pod.yaml
+    # This is a sample pod definition for using SecretProviderClass and the user-assigned identity to access your key vault
+    kind: Pod
+    apiVersion: v1
+    metadata:
+      name: busybox-secrets-store-inline-user-msi
+    spec:
+      containers:
+        - name: busybox
+          image: registry.k8s.io/e2e-test-images/busybox:1.29-4
+          command:
+            - "/bin/sleep"
+            - "10000"
+          volumeMounts:
+          - name: secrets-store01-inline
+            mountPath: "/mnt/secrets-store"
+            readOnly: true
+      volumes:
+        - name: secrets-store01-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: "azure-kvname-user-msi"
+    EOF
+    ```
+
+1. Apply the pod to your cluster by using the `kubectl apply` command.
+
+    ```bash
+    kubectl apply -f pod.yaml
+    ```
+
+#### Validate Key Vault secrets with managed identity
+
+After the pod starts, the mounted content at `/mnt/secrets-store` is available. Use the following commands to validate your secret.
+
+1. Show secrets held in the secrets store by using the following command.
+
+    ```bash
+    kubectl exec busybox-secrets-store-inline-user-msi -- ls /mnt/secrets-store/
+    ```
+
+1. Display the secret in the store using the following command. `$KEYVAULT_SECRET_NAME` resolves to the sample's `ExampleSecret`.
+
+    ```bash
+    kubectl exec busybox-secrets-store-inline-user-msi -- cat /mnt/secrets-store/$KEYVAULT_SECRET_NAME
+    ```
+
+#### Clean up Terraform resources
+
+If you deployed the sample only to complete this article and don't need the resources for anything else, remove them from the same working directory you used to apply the configuration.
+
+> [!WARNING]
+> Only run `terraform destroy` from the working directory used for this sample, and confirm the plan before you apply it. Avoid running `terraform destroy` against a configuration pointed at existing, shared, or imported infrastructure.
+
+```bash
+KUBE_CONTEXT=$(kubectl config current-context)
+kubectl config delete-context $KUBE_CONTEXT
+terraform destroy
+```
+
+---
+
+::: zone-end
+
+::: zone pivot="access-with-a-microsoft-entra-workload-identity,access-with-a-user-assigned-managed-identity"
+
+## Obtain certificates and keys
+
+The Azure Key Vault design makes sharp distinctions between keys, secrets, and certificates. The certificate features of the Key Vault service are designed to make use of key and secret capabilities. When you create a key vault certificate, it creates an addressable key and secret with the same name. This key allows authentication operations, and the secret allows the retrieval of the certificate value as a secret.
+
+A key vault certificate also contains public x509 certificate metadata. The key vault stores both the public and private components of your certificate in a secret. You can obtain each individual component by specifying the `objectType` in `SecretProviderClass`. The following table shows the `objectType` values you can specify in `SecretProviderClass` to retrieve different components of a key vault certificate and what each value returns:
+
+| `objectType` value | Return value | Returns entire certificate chain |
+|---|---|---|
+|`key`|The public key, in Privacy Enhanced Mail (PEM) format.|N/A|
+|`cert`|The certificate, in PEM format.|No|
+|`secret`|The private key and certificate, in PEM format.|Yes|
+
+## Disable the add-on on existing clusters
+
+> [!NOTE]
+> Before you disable the add-on, ensure that *no* `SecretProviderClass` is in use. Trying to disable the add-on while a `SecretProviderClass` exists results in an error.
+
+Disable the Azure Key Vault provider for Secrets Store CSI Driver capability in an existing cluster using the [`az aks disable-addons`][az-aks-disable-addons] command with the `azure-keyvault-secrets-provider` add-on.
+
+```azurecli-interactive
+az aks disable-addons --addons azure-keyvault-secrets-provider --resource-group myResourceGroup --name myAKSCluster
+```
+
+> [!NOTE]
+> When you disable the add-on, existing workloads should have no issues or see any updates in the mounted secrets. If the pod restarts or a new pod is created as part of scale-up event, the pod fails to start because the driver is no longer running.
+
+::: zone-end
+
+::: zone pivot="access-with-a-microsoft-entra-workload-identity,access-with-a-user-assigned-managed-identity,access-with-service-connector"
+
+## Next steps
+
+In this article, you learned how to create and provide an identity to access your Azure Key Vault. The [Service Connector](https://learn.microsoft.com/en-us/azure/service-connector/overview) integration helps simplify the connection configuration for AKS workloads and Azure backing services. It securely handles authentication and network configurations and follows best practices for connecting to Azure services. For more information, see [Use the Azure Key Vault provider for Secrets Store CSI Driver in an AKS cluster](https://learn.microsoft.com/en-us/azure/service-connector/tutorial-python-aks-keyvault-csi-driver) and the [Service Connector introduction](https://blog.aks.azure.com/2024/05/23/service-connector-intro).
+
+If you want to configure extra configuration options or perform troubleshooting, see [Configuration options and troubleshooting resources for Azure Key Vault provider with Secrets Store CSI Driver in AKS](https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-configuration-options).
+
+::: zone-end
+
+[csi-secrets-store-driver]: https://learn.microsoft.com/en-us/azure/aks/csi-secrets-store-driver
+[az-aks-show]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-show
+[az-aks-get-credentials]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-get-credentials
+[az-identity-federated-credential-create]: https://learn.microsoft.com/en-us/cli/azure/identity/federated-credential#az-identity-federated-credential-create
+[workload-identity]: https://learn.microsoft.com/en-us/azure/aks/workload-identity-overview
+[identity-bindings]: https://learn.microsoft.com/en-us/azure/aks/identity-bindings-concepts
+[identity-bindings-setup]: https://learn.microsoft.com/en-us/azure/aks/identity-bindings
+[managed-identity]:https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview
+[az-account-set]: https://learn.microsoft.com/en-us/cli/azure/account#az-account-set
+[az-identity-create]: https://learn.microsoft.com/en-us/cli/azure/identity#az-identity-create
+[az-role-assignment-create]: https://learn.microsoft.com/en-us/cli/azure/role/assignment#az-role-assignment-create
+[az-aks-disable-addons]: https://learn.microsoft.com/en-us/cli/azure/aks#az-aks-disable-addons
+[az-keyvault-set-policy]: https://learn.microsoft.com/en-us/cli/azure/keyvault#az-keyvault-set-policy
+[terraform-sample]: https://github.com/Azure/terraform/tree/master/quickstart/101-aks-access-keyvault

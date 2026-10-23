@@ -1,0 +1,275 @@
+# Blue-Green Node Pool Upgrades in Azure Kubernetes Service (AKS) (preview)
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/blue-green-node-pool-upgrade  
+> Microsoft doc last updated: 11/06/2024
+
+
+Blue-green upgrades enable you to upgrade your AKS node pools by adding new _green_ nodes with the updated configuration (Kubernetes and node image version) to the existing node pool, while the original _blue_ nodes continue running. This strategy allows you to test and validate the new configuration before committing to the new version, with the ability to quickly roll back if issues arise.
+
+This article explains when to use blue-green upgrades, how the process works, configuration options, and considerations for using this upgrade strategy.
+
+## When to use blue-green upgrades
+
+> [!NOTE]
+> Keep in mind that blue-green upgrades require double the node capacity during the upgrade process, which can lead to increased costs and resource requirements.
+
+Consider blue-green upgrades when:
+
+- You require granular testing and verification of workloads batch by batch.
+- You need to validate new node configurations before switching production traffic.
+- You want instant rollback capability without reprovisioning nodes.
+- You're upgrading critical production workloads that can't tolerate disruption.
+- You need to test application compatibility with new Kubernetes versions.
+
+If you're currently using a manual blue-green deployment process for node pool upgrades and want to automate this workflow, consider using AKS blue-green node pool upgrades instead. For more information about the manual blue green upgrade process, see [Manual blue-green node pool upgrades](https://learn.microsoft.com/en-us/azure/aks/how-does-upgrade-happen#blue-green-node-pool-upgrades-manual).
+
+## When to use standard rolling upgrades
+
+Standard rolling upgrades might be more appropriate in the following scenarios:
+
+- Development or test environments with downtime tolerance.
+- Cost-sensitive deployments where temporary doubling is prohibitive.
+- Simple stateless applications with good disruption handling.
+- Environments with limited available quota or capacity.
+
+## Prerequisites
+
+- Sufficient quota for doubling node pool capacity.
+- Azure CLI version 2.64.0 or higher. Find your version using the `az --version` command. If you need to install or upgrade, see [Install Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli).
+- The [`aks-preview` Azure CLI extension](#install-the-aks-preview-azure-cli-extension) installed and updated to the latest version.
+- API version `2025-08-02-preview` or later.
+- [Cluster autoscaler](https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler-overview) configured (recommended, but not required).
+
+### Install the `aks-preview` Azure CLI extension
+
+Install or update the `aks-preview` extension using the [`az extension add`](https://learn.microsoft.com/en-us/cli/azure/extension#az-extension-add) and [`az extension update`](https://learn.microsoft.com/en-us/cli/azure/extension#az-extension-update) commands.
+
+```azurecli-interactive
+# Install the aks-preview extension
+az extension add --name aks-preview
+
+# Update the aks-preview extension
+az extension update --name aks-preview
+```
+
+## Supported features for blue-green upgrades
+
+Blue-green upgrades currently support the following features:
+
+- [Kubernetes version upgrades](https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster)
+- [Node image upgrades](https://learn.microsoft.com/en-us/azure/aks/node-image-upgrade)
+- [System and user node pools](https://learn.microsoft.com/en-us/azure/aks/use-system-pools)
+- Manual commit and rollback control
+- [Cluster autoscaler](https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler)
+- [Availability zones](https://learn.microsoft.com/en-us/azure/reliability/reliability-aks#availability-zone-support)
+- [PodDisruptionBudgets](https://learn.microsoft.com/en-us/azure/aks/operator-best-practices-scheduler#limit-disruption-impact-by-using-pod-disruption-budgets-pdbs)
+- [Autoupgrade channels](https://learn.microsoft.com/en-us/azure/aks/auto-upgrade-cluster) and [Planned Maintenance windows](https://learn.microsoft.com/en-us/azure/aks/planned-maintenance)
+- [AKS Communication Manager](https://learn.microsoft.com/en-us/azure/aks/aks-communication-manager)
+
+## Blue-green upgrade limitations and considerations
+
+Blue-green upgrades currently don't support the following features:
+
+- Automated rollback
+- Using blue green strategy for updates outside of Kubernetes and node image version (ex. certificate rotation, kubelet/os configuration updates, etc)
+- [Virtual machine (VM) pools](https://learn.microsoft.com/en-us/azure/aks/virtual-machines-node-pools)
+- [Max unavailable](https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster#customize-unavailable-nodes-during-upgrade) setting
+- [Undrainable node behavior](https://learn.microsoft.com/en-us/azure/aks/upgrade-options#option-2-handle-undrainable-nodes-while-honoring-pdbs) and [maxBlockedNodes](https://learn.microsoft.com/en-us/azure/aks/upgrade-options#example-configuration-with-max-blocked-nodes) setting
+
+Keep the following considerations in mind when using blue-green upgrades:
+
+| Resource requirements | Complexity considerations | Time factors |
+| --------------------- | ------------------------- | ------------ |
+| * Requires double the node capacity during the upgrade process, leading to increased infrastructure costs. <br> * You need extra compute quota in your Azure subscription to accommodate the temporary doubling of nodes. <br> * You might encounter regional capacity limits during peak usage periods. | * Requires careful planning for stateful workloads to ensure data consistency during migration. <br> * Requires extra monitoring for both the blue and green nodes during the transition period. | * Longer overall upgrade duration compared to in-place upgrades. <br> * Validation period adds time before final cutover. |
+
+## Blue-green upgrade workflow
+
+The blue-green upgrade process creates a parallel environment for safe transitions between node pool versions. You can either **upgrade and commit to the new _green_ pool after validation** or **upgrade and roll back to the original _blue_ pool** if you encounter issues.
+
+### Upgrade and commit scenario
+
+The following diagram illustrates the upgrade and commit workflow:
+
+The upgrade and commit process is as follows:
+
+1. **Cordon _blue_ nodes**: Existing _blue_ nodes are marked as unschedulable.
+1. **Add _green_ nodes**: New _green_ nodes with the updated configuration are added to the existing node pool.
+1. **Parallel operation**: Both _blue_ and _green_ nodes run simultaneously within the same node pool.
+1. **Gradual migration**: Workloads are progressively drained from _blue_ nodes and rescheduled to _green_ nodes in batches.
+1. **Validate _green_ nodes**: Monitor and test workloads on the new nodes during migration.
+1. **Complete transition**: After the final validation period, the _blue_ nodes are deleted and _green_ nodes become primary.
+
+### Upgrade and roll back scenario
+
+The following diagram illustrates the upgrade and roll back workflow:
+
+The upgrade and roll back process is as follows:
+
+1. **Cordon _blue_ nodes**: Existing _blue_ nodes are marked as unschedulable.
+1. **Add _green_ nodes**: New _green_ nodes with the updated configuration are added to the existing node pool.
+1. **Parallel operation**: Both _blue_ and _green_ nodes run simultaneously within the same node pool.
+1. **Detect issues**: Identify problems during validation on _green_ nodes.
+1. **Execute rollback**: Uncordon _blue_ nodes, drain _green_ nodes, and migrate workloads back to _blue_ nodes.
+1. **Restore state**: _Green_ nodes are deleted and the node pool returns to its original configuration.
+
+## Choose your upgrade strategy
+
+When creating or upgrading an AKS node pool, you can specify the upgrade strategy (`upgradeStrategy`) to use. The available strategies include:
+
+| Strategy | Description |
+| -------- | ----------- |
+| `Rolling` (default) | Standard rolling upgrade where nodes are updated one by one. |
+| `BlueGreen` | Adds new _green_ nodes with the updated configuration to the existing node pool while keeping the original _blue_ nodes running. |
+
+During an in-progress upgrade, AKS supports switching from `BlueGreen` to `Rolling`, but not from `Rolling` to `BlueGreen`.
+
+## Customize blue-green upgrade properties
+
+You can customize the following blue-green upgrade properties (`NodePoolBlueGreenUpgradeSettings`):
+
+| Property | Description | Allowed values | Default value |
+| -------- | ----------- | -------------- | ------------- |
+| `drainBatchSize` | Number or percentage of nodes to drain in each batch during upgrade. Percentage is calculated from the total number of blue nodes at the start of the upgrade. Fractional nodes are rounded up. | Integer (for example, `5`) or percentage (for example, `50%`). **Must be a non-zero value**. | 10% |
+| `drainTimeoutInMinutes` | Maximum time (in minutes) to wait for pods to gracefully terminate on each node before failing the upgrade. Honors pod disruption budgets during this wait time. If exceeded, the upgrade fails. | Integer between `1` and `1440` (24 hours). | 30 minutes |
+| `batchSoakDurationInMinutes` | Pause time (in minutes) between draining batches of nodes to allow for observation and validation. | Integer between `0` and `1440` (24 hours). | 15 minutes |
+| `finalSoakDurationInMinutes` | Wait time (in minutes) after all nodes are drained before removing old nodes. Provides a final validation period before committing to the upgrade. Rollback operations are only available during this final soak period. Once this period expires and the blue pool is deleted, rollback is no longer possible. | Integer between `0` and `10080` (seven days). | 60 minutes |
+
+## Create a node pool with default blue-green upgrade settings
+
+- Create a node pool with the default blue-green upgrade strategy and settings using the [`az aks nodepool add`](https://learn.microsoft.com/en-us/cli/azure/aks/nodepool#az-aks-nodepool-add) command with the `--upgrade-strategy` parameter set to `bluegreen`. The following example creates a new node pool named `myNodePool` in the AKS cluster `myAKSCluster` within the resource group `myResourceGroup`:
+
+    ```azurecli-interactive
+    az aks nodepool add \
+        --name myNodePool \
+        --cluster-name myAKSCluster \
+        --resource-group myResourceGroup \
+        --upgrade-strategy bluegreen
+    ```
+
+## Create a node pool with custom blue-green upgrade settings
+
+- Create a node pool with custom blue-green upgrade settings using the [`az aks nodepool add`](https://learn.microsoft.com/en-us/cli/azure/aks/nodepool#az-aks-nodepool-add) command with the `--upgrade-strategy` parameter set to `bluegreen` and set any desired custom blue-green upgrade settings. The following example creates a new node pool named `myNodePool` in the AKS cluster `myAKSCluster` within the resource group `myResourceGroup`, with custom blue-green upgrade settings:
+
+    ```azurecli-interactive
+    az aks nodepool add \
+        --name myNodePool \
+        --cluster-name myAKSCluster \
+        --resource-group myResourceGroup \
+        --upgrade-strategy bluegreen \
+        --drain-timeout-bg 5 \
+        --batch-soak-duration 5 \
+        --drain-batch-size 50% \
+        --final-soak-duration 180
+    ```
+
+## Start a blue-green upgrade for an existing node pool
+
+> [!IMPORTANT]
+> When you resume a paused upgrade, you can update the blue-green settings, but you can't change the Kubernetes version. You can switch an in-progress blue-green upgrade to the rolling strategy, but you can't switch an in-progress rolling upgrade to blue-green.
+
+- Start a blue-green upgrade for an existing node pool using the [`az aks nodepool upgrade`](https://learn.microsoft.com/en-us/cli/azure/aks/nodepool#az-aks-nodepool-upgrade) command with the `--kubernetes-version` parameter set to your desired version. You can start a blue-green upgrade for a node pool already using the blue-green strategy or for a node pool not yet configured with blue-green strategy. The following examples demonstrate both scenarios:
+
+    ```azurecli-interactive
+    # Start a blue-green upgrade for an existing node pool already using blue-green strategy
+    az aks nodepool upgrade \
+        --name myNodePool \
+        --cluster-name myAKSCluster \
+        --resource-group myResourceGroup \
+        --kubernetes-version <kubernetes-version>
+    
+    # Start a blue-green upgrade for an existing node pool not yet using blue-green strategy
+    az aks nodepool upgrade \
+        --name myNodePool \
+        --cluster-name myAKSCluster \
+        --resource-group myResourceGroup \
+        --kubernetes-version <kubernetes-version> \
+        --upgrade-strategy bluegreen
+    ```
+
+## Pause or cancel a blue-green upgrade
+
+- Pause or cancel an ongoing blue-green upgrade using the [`az aks nodepool operation-abort`](https://learn.microsoft.com/en-us/cli/azure/aks/nodepool#az-aks-nodepool-operation-abort) command. The following example pauses or cancels the blue-green upgrade for the node pool named `myNodePool` in the AKS cluster `myAKSCluster` within the resource group `myResourceGroup`:
+
+    ```azurecli-interactive
+    az aks nodepool operation-abort \
+        --name myNodePool \
+        --cluster-name myAKSCluster \
+        --resource-group myResourceGroup
+    ```
+
+## Switch an in-progress blue-green upgrade to rolling
+
+If an in-progress blue-green upgrade can't be resumed because node pool property changes would require a node reimage, you can switch the node pool upgrade strategy to rolling. AKS removes the blue-green upgrade protections and continues cleanup by using the rolling upgrade behavior.
+
+```azurecli-interactive
+az aks nodepool update \
+    --name myNodePool \
+    --cluster-name myAKSCluster \
+    --resource-group myResourceGroup \
+    --upgrade-strategy Rolling
+```
+
+## Roll back a blue-green upgrade
+
+Once an ongoing blue-green upgrade is canceled, the rollback can be initiated using the [`az aks nodepool rollback`](https://learn.microsoft.com/en-us/cli/azure/aks/nodepool#az-aks-nodepool-rollback) command.
+
+The rollback is only available during the final soak period as described in the [finalSoakDurationInMinutes](https://learn.microsoft.com/en-us/azure/aks/blue-green-node-pool-upgrade#customize-blue-green-upgrade-properties) property.
+
+The following example performs a rollback of the blue-green upgrade for the node pool named `myNodePool` in the AKS cluster `myAKSCluster` within the resource group `myResourceGroup`:
+
+```azurecli-interactive
+az aks nodepool rollback \
+    --name myNodePool \
+    --cluster-name myAKSCluster \
+    --resource-group myResourceGroup
+ ```
+
+## Frequently asked questions (FAQs)
+
+### Do blue-green upgrades support the `maxUnavailable` setting?
+
+No, the `maxUnavailable` setting isn't applicable to blue-green upgrades. New _green_ nodes are added to the existing node pool alongside the existing _blue_ nodes, ensuring all original nodes remain available during the upgrade process.
+
+### Can blue-green upgrades be used for node pool updates beyond Kubernetes and node image version?
+
+No, the blue-green upgrade strategy currently supports only Kubernetes and node image version upgrades. You can't use this strategy for other changes, such as certificate rotation or kubelet and OS configuration changes. If you need to apply changes that trigger node reimage while a blue-green upgrade is in progress, switch the node pool to the rolling upgrade strategy or revert the property changes before retrying.
+
+### Which Kubernetes versions are compatible with blue-green upgrades?
+
+Blue-green upgrades work with all [AKS-supported Kubernetes versions](https://learn.microsoft.com/en-us/azure/aks/supported-kubernetes-versions), including both community-supported versions and [Long Term Support (LTS) versions](https://learn.microsoft.com/en-us/azure/aks/long-term-support), so long as you use API version `2025-08-02-preview` or later.
+
+### Can I use the automatic security patch channel with blue-green upgrades?
+
+Yes, as long as the node pool's upgrade strategy is configured to use blue-green. When configured, security patches follow the blue-green upgrade process instead of the default rolling update mechanism.
+
+### What happens to persistent volumes during blue-green upgrades?
+
+Persistent volumes remain accessible. Pods are gracefully drained and rescheduled, maintaining their volume attachments.
+
+### Can I perform blue-green upgrades across multiple node pools simultaneously?
+
+Yes, different node pools can undergo blue-green upgrades in parallel, but each pool can only have one active upgrade. You currently can't control the order of upgrades across multiple pools.
+
+### How do blue-green upgrades handle node-specific configurations like taints and labels?
+
+All node configurations including taints, labels, and annotations are automatically replicated to the _green_ pool.
+
+### What's the cost impact of blue-green upgrades?
+
+You're charged for both the original _blue_ nodes and the new _green_ nodes during the upgrade window, so make sure you plan for temporary cost doubling during the transition period.
+
+### What happens during a capacity failure?
+
+In the event of a capacity failure when adding the _green_ nodes, the upgrade fails and the _blue_ nodes remain unaffected. You can retry the upgrade once sufficient capacity is available or choose to roll back.
+
+### What happens during rollback?
+
+If the number of green nodes is less than or equal to the number of blue nodes when rollback is initiated, the green nodes are removed, and the blue nodes are uncordoned and revived to resume normal operation.
+
+## Related content
+
+To learn more about node pool upgrades in AKS, see the following articles:
+
+- [Roll back node pool versions in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/roll-back-node-pool-version)
+- [Configure rolling upgrades for Azure Kubernetes Service (AKS) node pools](https://learn.microsoft.com/en-us/azure/aks/upgrade-valkey-aks-nodepool)
+- [Autoupgrade node OS images in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/auto-upgrade-node-os-image)

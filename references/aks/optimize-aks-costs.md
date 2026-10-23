@@ -1,0 +1,196 @@
+# Optimize Azure Kubernetes Service (AKS) Usage and Costs
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/optimize-aks-costs  
+> Microsoft doc last updated: 06/24/2026
+
+
+This article describes practical ways to optimize Azure Kubernetes Service (AKS) usage and costs across scaling, infrastructure sizing, GPU usage, multitenancy, and Azure discounts.
+
+For most production workloads, AKS Automatic is the recommended starting point because it applies production-ready defaults, automates core operations, and helps reduce overprovisioning. AKS Standard remains the right choice when you need deeper platform customization.
+
+This article covers:
+
+- [Choose your optimization baseline](#choose-your-optimization-baseline)
+- [AKS Automatic cost advantages](#aks-automatic-cost-advantages)
+- [Automatic scaling](#automatic-scaling)
+- [Cluster right-sizing](#cluster-right-sizing)
+- [GPU optimizations](#gpu-optimizations)
+- [Multitenancy](#multitenancy)
+- [Azure discounts](#azure-discounts)
+
+## Choose your optimization baseline
+
+Start by selecting the AKS cluster mode that matches your cost and operations model.
+
+| Scenario | Recommended cluster mode | Why |
+| -------- | ------------------------ | --- |
+| Most production workloads where you want strong cost efficiency with lower operational overhead | AKS Automatic | Preconfigured production-ready defaults, managed operations, and efficient resource allocation help reduce waste and time spent tuning the platform. |
+| Workloads requiring extensive custom cluster configuration, specialized add-ons, or strict platform controls | AKS Standard | Full control over cluster configuration and operating model. |
+| Teams early in Kubernetes operations maturity and focused on fast, predictable delivery | AKS Automatic | Reduces platform management complexity so teams can focus on applications. |
+| Teams with established platform engineering processes and specific architectural standards | AKS Standard | Supports advanced customization and custom operational patterns. |
+
+For more information, see [What is Azure Kubernetes Service (AKS) Automatic?](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic)
+
+## AKS Automatic cost advantages
+
+AKS Automatic reduces costs in two ways: it minimizes compute waste through automation, and it reduces the operational overhead of running Kubernetes. The following table summarizes the features that have a direct cost impact and how they compare to AKS Standard.
+
+**Preconfigured** features are always enabled and can't be changed. **Default** features are configured for you but can be adjusted. **Optional** features are available to configure and aren't enabled by default.
+
+| Feature | AKS Automatic | AKS Standard | Cost impact |
+| ------- | ------------- | ------------ | ----------- |
+| Node autoprovisioning (NAP) | **Preconfigured** | **Optional** | Provisions right-sized nodes for pending pods automatically, reducing idle and overprovisioned capacity. |
+| Horizontal Pod Autoscaler (HPA) | **Preconfigured** | **Optional** | Scales pods to match demand without manual intervention, preventing resource waste at low traffic. |
+| Kubernetes Event-driven Autoscaler (KEDA) | **Preconfigured** | **Optional** | Event-driven scaling eliminates idle replicas waiting for work. |
+| Vertical Pod Autoscaler (VPA) | **Preconfigured** | **Optional** | Automatically right-sizes pod resource requests and limits based on actual usage over time. |
+| Pod bin-packing efficiency | **Preconfigured** | Manual tuning | Pods are bin-packed efficiently to maximize node utilization, reducing the total node count needed. |
+| Managed Prometheus + Container Insights | **Default** | **Optional** | Provides immediate cost visibility from day one without requiring observability setup. |
+| Automatic cluster and node OS upgrades | **Preconfigured** | Manual or optional | Eliminates upgrade-related engineering overhead and reduces the risk of costly security incidents from unpatched nodes. |
+| Automatic node repair | **Preconfigured** | **Preconfigured** | Reduces downtime costs from unhealthy nodes without manual intervention. |
+| Fully managed node resource group | **Preconfigured** | Optional lockdown | Prevents accidental or unauthorized resource modifications that can generate unexpected costs. |
+| Uptime SLA (99.95% API server) | **Included** | Paid (Standard tier upgrade) | No extra cost to get a financially backed uptime guarantee. |
+| Pod readiness SLA (99.9% within 5 min) | **Included** | Not available | Predictable scaling behavior without custom reliability investment. |
+
+> [!NOTE]
+> Because scaling tools like HPA, KEDA, and VPA are preconfigured in AKS Automatic, teams don't incur the setup, testing, and maintenance cost of configuring these features themselves. In AKS Standard, each of these features requires manual configuration and ongoing tuning.
+
+## Automatic scaling
+
+### Horizontal pod autoscaling
+
+The **Horizontal Pod Autoscaler (HPA)** monitors resource demand and automatically updates a workload resource to scale the number of pods to match demand. The response to increased load is to deploy more pods. If the load decreases and the number of pods is above the configured minimum, the autoscaler tells the workload resource to scale down.
+
+The Metrics API gets data from the kubelet every 60 seconds, and the HPA checks the Metrics API every 15 seconds for any needed changes by default. This means that the HPA updates every 60 seconds. When you configure the HPA for a deployment, you define the minimum and maximum number of replicas that can run and the metrics that the HPA uses to determine when to scale.
+
+> [!TIP]
+> In AKS Automatic, HPA is preconfigured and ready to use without additional setup. In AKS Standard, you configure HPA manually on each workload.
+
+For more information, see [Horizontal Pod Autoscaling](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/) and [Autoscale pods in AKS](https://learn.microsoft.com/en-us/azure/aks/tutorial-kubernetes-scale#autoscale-pods).
+
+### Kubernetes event-driven autoscaling
+
+The [**Kubernetes Event-driven Autoscaler (KEDA)**](https://keda.sh/) applies event-driven autoscaling to your workloads. KEDA works with the HPA and can extend functionality without overwriting or duplication.
+
+> [!TIP]
+> In AKS Automatic, KEDA is preconfigured and enabled on the cluster. In AKS Standard, you install and configure the KEDA add-on manually.
+
+You can use the KEDA add-on for AKS to scale your applications and leverage a [rich catalog of Azure KEDA scalers](https://keda.sh/docs/2.16/scalers/). For more information, see [Application autoscaling with the KEDA add-on](https://learn.microsoft.com/en-us/azure/aks/keda-about) and [Install the KEDA add-on for AKS](https://learn.microsoft.com/en-us/azure/aks/keda-deploy-add-on-cli).
+
+### Vertical pod autoscaling
+
+The **Vertical Pod Autoscaler (VPA)** automatically sets resource requests and limits on containers per workload based on past usage. The VPA frees up CPU and Memory for pods to ensure effective utilization of your AKS clusters. Over time, the VPA provides recommendations for resource usage.
+
+> [!TIP]
+> In AKS Automatic, VPA is preconfigured and enabled on the cluster. In AKS Standard, you enable and configure VPA manually.
+
+For more information, see [Vertical pod autoscaling in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/vertical-pod-autoscaler) and [Use the Vertical Pod Autoscaler (VPA) in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/use-vertical-pod-autoscaler).
+
+## Cluster right-sizing
+
+### Right-size your cluster
+
+Right-size your clusters to optimize costs and performance. Manually resize a cluster by adding or removing nodes to meet the needs of your applications. You can also autoscale your cluster to automatically adjust the number of nodes in response to changing demands.
+
+> [!TIP]
+> AKS Automatic enables Managed Prometheus and Container Insights by default, so you get immediate visibility into resource utilization from day one. In AKS Standard, you set up observability separately. Early visibility helps you act on overprovisioning signals before they accumulate into sustained waste.
+
+For more information, see [Resize Azure Kubernetes Service (AKS) clusters](https://learn.microsoft.com/en-us/azure/aks/resize-cluster).
+
+### Cluster autoscaling
+
+By using the **cluster autoscaler**, you can automatically scale node pools based on resource usage and constraints. For example, scale up to schedule pending pods or scale down to reduce costs for unused nodes. The [cluster autoscaler profile](https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler-overview#cluster-autoscaler-profile) is a set of parameters that you can fine-tune to control the behavior of the cluster autoscaler.
+
+For more information, see [Cluster autoscaling in Azure Kubernetes Service (AKS) overview](https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler-overview) and [Use the cluster autoscaler in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/cluster-autoscaler).
+
+### Node autoprovisioning
+
+Node autoprovisioning (NAP), based on [Karpenter](https://karpenter.sh/), provisions right-sized infrastructure for pending pods and improves bin-packing efficiency.
+
+- In AKS Automatic, node autoprovisioning is part of the managed experience.
+- In AKS Standard, node autoprovisioning is available when you need this capability with a custom cluster model.
+
+For more information, see [Node autoprovisioning in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/node-auto-provisioning).
+
+## GPU optimizations
+
+### GPU partitioning and sharing
+
+GPU partitioning helps combat underutilization by splitting up or sharing GPUs across multiple workloads. The following sections cover different ways to partition and share GPUs in AKS.
+
+#### Time-slicing
+
+The [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/overview.html) enables the **time-slicing** of GPUs in Kubernetes clusters. By using time-slicing, a system administrator can define a set of _replicas_ for a GPU, each of which the administrator can hand out independently to a pod to run workloads on. You can apply cluster-wide default time-slicing configurations and node-specific configurations.
+
+For more information, see [Time-slicing GPUs in Kubernetes](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-sharing.html).
+
+#### Multi-Process Service (MPS)
+
+A single process might not use all the memory and compute bandwidth capacity available on a GPU. The **Multi-Process Service (MPS)** enables logical partitioning of memory and compute resources between workloads. It also allows kernel and memcopy operations from different processes to overlap on the GPU. MPS helps you achieve higher GPU utilization and shorter running times.
+
+For more information, see [Multi-Process Service (MPS)](https://docs.nvidia.com/deploy/mps/index.html#mps).
+
+#### Multi-instance GPUs (MIGs)
+
+**Multi-instance GPUs (MIGs)** enable you to partition GPUs based on the NVIDIA Ampere and later architectures into separate and secure GPU instances for CUDA applications.
+
+For more information, see [GPU Operator with MIG](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest/gpu-operator-mig.html) and [Create a multi-instance GPU node pool in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/gpu-multi-instance).
+
+## Multitenancy
+
+Multitenancy refers to the sharing of infrastructure across tenants, teams, and business units. The following table outlines different ways to implement multitenancy in AKS:
+
+| Multitenancy type | Multitenancy level | Cluster pod density | Cost allocation | Ideal use case | Potential risks |
+| ----------------- | ------------------ | ------------------- | --------------- | -------------- | --------------- |
+| [**Dedicated cluster**](#dedicated-cluster) | Hard multitenancy | Lower | Easiest | Complete security isolation boundaries and straightforward cost allocation | • Cluster sprawl at scale adds to management overhead costs <br> • Lower pod density and more overprovisioned resources |
+| [**Dedicated node pool**](#dedicated-node-pool) | Soft multitenancy | Medium | Medium | Medium pod density | • Requires trust between tenants <br> • Requires extra cluster configurations, like network policies, quota management, role-based access control (RBAC), etc. |
+| [**Dedicated namespace**](#dedicated-namespace) | Soft multitenancy | Higher | Harder | Sharing infrastructure to maximize resource utilization | • Unsafe for hostile environments by default <br> • Requires extra cluster configurations, like network policies, quota management, role-based access control (RBAC), etc. |
+
+### Dedicated cluster
+
+With **dedicated cluster multitenancy**, clusters are dedicated to a single workload or team.
+
+The following table outlines pros and cons of using a dedicated cluster:
+
+| Pros | Cons |
+| ---- | ---- |
+| • Easier isolation method <br> • Straightforward cost allocation and chargeback <br> • Great for cases where tenants don't trust each other (often from security and resource sharing perspectives) | • High management and financial overhead <br> • Generally low pod density and overprovisioned resources |
+
+### Dedicated node pool
+
+With **dedicated node pool multitenancy**, clusters are shared by many tenants.
+
+The following table outlines pros and cons of using a dedicated node pool:
+
+| Pros | Cons |
+| ---- | ---- |
+| • Medium pod density <br> • Some shared infrastructure <br> • Apply Azure tags to node pools dedicated to a single tenant (tags propagate to nodes and persist through upgrades) | • Requires trust between the tenants <br> • Requires extra cluster configurations, like network policies, quota management, role-based access control (RBAC), etc. |
+
+### Dedicated namespace
+
+With **dedicated namespace multitenancy**, clusters are shared by many tenants, with namespaces serving as the isolation boundary.
+
+The following table outlines pros and cons of using a dedicated namespace:
+
+| Pros | Cons |
+| ---- | ---- |
+| • Higher pod density <br> • Best binpacking <br> • Sharing infrastructure to maximize resource utilization | • Unsafe for hostile environments by default <br> • Requires extra security measures in place if all tenants can't be trusted |
+
+## Azure discounts
+
+To take savings one step further, take advantage of Azure discounts such as Azure Savings Plans, Reserved Instances, and Azure Hybrid Benefits.
+
+| Azure discount type | Details |
+| ------------------- | ------- |
+| [**Azure Savings Plans**](https://learn.microsoft.com/en-us/azure/cost-management-billing/savings-plan/savings-plan-overview) | • 1-3 year upfront commitment <br> • Save up to 65% compared to pay-as-you-go <br> • Flexible, with no SKU family or region restrictions <br> • Best for workloads with consistent costs with resources in various SKUs and regions |
+| [**Reserved Instances**](https://learn.microsoft.com/en-us/azure/cost-management-billing/reservations/save-compute-costs-reservations) | • 1-3 year upfront commitment <br> • Save up to 72% compared to pay-as-you-go <br> • Restricted to specific SKU families and regions <br> • Best for stable workloads running continuously (with no unexpected SKU or region changes) |
+| [**Azure Hybrid Benefits**](https://learn.microsoft.com/en-us/azure/aks/azure-hybrid-benefit) | • Bring your own on-premises Windows Server and SQL Server licenses to Azure <br> • Use any qualifying on-premises licenses that have an active Software Assurance (SA) or qualifying subscription |
+
+## Related content
+
+To learn more about AKS costs and AKS Automatic, see the following articles:
+
+- [Introduction to Azure Kubernetes Service (AKS) Automatic](https://learn.microsoft.com/en-us/azure/aks/intro-aks-automatic)
+- [Quickstart: Create an AKS Automatic cluster](https://learn.microsoft.com/en-us/azure/aks/automatic/quick-automatic-managed-network)
+- [Understand Azure Kubernetes Service (AKS) usage and costs](https://learn.microsoft.com/en-us/azure/aks/understand-aks-costs)
+- [Best practices for cost optimization in Azure Kubernetes Service (AKS)](https://learn.microsoft.com/en-us/azure/aks/best-practices-cost)
+- [Get Azure Kubernetes Service (AKS) cost recommendations in Azure Advisor](https://learn.microsoft.com/en-us/azure/aks/cost-advisors)

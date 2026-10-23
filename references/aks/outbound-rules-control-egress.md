@@ -1,0 +1,334 @@
+# Outbound Network and FQDN Rules for Azure Kubernetes Service (AKS) Clusters
+
+> Source: https://learn.microsoft.com/en-us/azure/aks/outbound-rules-control-egress  
+> Microsoft doc last updated: 06/18/2026
+
+
+This article provides the necessary details that allow you to secure outbound traffic from your Azure Kubernetes Service (AKS). It contains the cluster requirements for a base AKS deployment and additional requirements for optional add-ons and features. You can apply this information to any outbound restriction method or appliance.
+
+To see an example configuration using Azure Firewall, visit [Control egress traffic using Azure Firewall in AKS](https://learn.microsoft.com/en-us/azure/aks/limit-egress-traffic).
+
+> [!IMPORTANT]
+> Starting on **November 30, 2025**, Azure Kubernetes Service (AKS) no longer supports or provides security updates for Azure Linux 2.0. The Azure Linux 2.0 node image is frozen at the `202512.06.0` release. Beginning on **October 31, 2026**, node images will be removed, and you'll be unable to scale your node pools. Migrate to a supported Azure Linux version by [upgrading your node pools](https://learn.microsoft.com/en-us/azure/aks/upgrade-aks-cluster) to a supported Kubernetes version or migrating to [osSku AzureLinux3](https://learn.microsoft.com/en-us/azure/aks/upgrade-os-version). For more information, see the [Retirement GitHub issue](https://github.com/Azure/AKS/issues/4988) and the [Azure Updates retirement announcement](https://azure.microsoft.com/updates?id=500645). To stay informed on announcements and updates, follow the [AKS release notes](https://github.com/Azure/AKS/releases).
+
+## Background
+
+AKS clusters are deployed on a virtual network. You can either customize and preconfigure this network, or AKS can create and manage it. In either case, the cluster has **outbound**, or egress, dependencies on services outside of the virtual network.
+
+For management and operational purposes, nodes in an AKS cluster need to access certain ports and fully qualified domain names (FQDNs). These endpoints are required for the nodes to communicate with the API server or to download and install core Kubernetes cluster components and node security updates. For example, the cluster needs to pull container images from Microsoft Artifact Registry (MAR).
+
+The AKS outbound dependencies are almost entirely defined with FQDNs, which don't have static addresses behind them. The lack of static addresses means you can't use network security groups (NSGs) to lock down the outbound traffic from an AKS cluster. 
+
+By default, AKS clusters have unrestricted outbound internet access. This level of network access allows nodes and services you run to access external resources as needed. If you want to restrict egress traffic, a limited number of ports and addresses must be accessible to maintain healthy cluster maintenance tasks. For outbound internet traffic, it's not recommended to set all deny rules in an NSG.
+
+A [network isolated AKS cluster][network-isolated-cluster] provides the simplest and most secure solution for setting up outbound restrictions for a cluster. A network isolated cluster pulls the images for cluster components and add-ons from a private Azure Container Registry (ACR) instance connected to the cluster instead of pulling from MAR. If the images aren't present, the private ACR pulls them from MAR and serves them via its private endpoint, eliminating the need to enable egress from the cluster to the public MAR endpoint. The cluster operator can then incrementally set up allowed outbound traffic securely over a private network for each scenario they want to enable. This way the cluster operators have complete control over designing the allowed outbound traffic from their clusters right from the start, which reduces the risk of data exfiltration.
+
+Another solution to securing outbound addresses is using a firewall device that can control outbound traffic based on domain names. Azure Firewall can restrict outbound HTTP and HTTPS traffic based on the FQDN of the destination. You can also configure your preferred firewall and security rules to allow these required ports and addresses.
+
+> [!IMPORTANT]
+>
+> This document covers only how to lock down the traffic leaving the AKS subnet. AKS has no ingress requirements by default. Blocking **internal subnet traffic** using network security groups (NSGs) and firewalls isn't supported. To control and block the traffic within the cluster, see [Secure traffic between pods using network policies in AKS][use-network-policies].
+
+## Required outbound network rules and FQDNs for AKS clusters
+
+The following network and FQDN/application rules are required for an AKS cluster. You can use them if you wish to configure a solution other than Azure Firewall.
+
+* IP address dependencies are for non-HTTP/S traffic (both TCP and UDP traffic).
+* FQDN HTTP/HTTPS endpoints can be placed in your firewall device.
+* Wildcard HTTP/HTTPS endpoints are dependencies that can vary with your AKS cluster based on a number of qualifiers.
+* AKS uses an admission controller to inject the FQDN as an environment variable to all deployments under kube-system and gatekeeper-system. This ensures all system communication between nodes and API server uses the API server FQDN and not the API server IP.  You can get the same behavior on your own pods, in any namespace, by annotating the pod spec with an annotation named `kubernetes.azure.com/set-kube-service-host-fqdn`. If that annotation is present, AKS will set the KUBERNETES_SERVICE_HOST variable to the domain name of the API server instead of the in-cluster service IP. This is useful in cases where the cluster egress is via a layer 7 firewall.
+* If you have an app or solution that needs to talk to the API server, you must either add an **additional** network rule to allow **TCP communication to port 443 of your API server's IP** **OR** , if you have a layer 7 firewall configured to allow traffic to the API Server's domain name, set `kubernetes.azure.com/set-kube-service-host-fqdn` in your pod specs.
+* On rare occasions, if there's a maintenance operation, your API server IP might change. Planned maintenance operations that can change the API server IP are always communicated in advance.
+* You might notice traffic towards "md-*.blob.storage.azure.net" endpoint. This endpoint is used for internal components of Azure Managed Disks. Blocking access to this endpoint from your firewall should not cause any issues.
+* You might notice traffic towards "umsa*.blob.core.windows.net" endpoint. This endpoint is used to store manifests for Azure Linux VM Agent & Extensions and is regularly checked to download new versions. You can find more details on [VM Extensions](https://learn.microsoft.com/en-us/azure/virtual-machines/extensions/features-linux?tabs=azure-cli#network-access).
+
+### Azure Global required network rules
+
+| Destination Endpoint                                                             | Protocol | Port    | Use  |
+|----------------------------------------------------------------------------------|----------|---------|------|
+| **`*:1194`** <br/> *Or* <br/> [ServiceTag](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags) - **`AzureCloud.<Region>:1194`** <br/> *Or* <br/> [Regional CIDRs](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#discover-service-tags-by-using-downloadable-json-files) - **`RegionCIDRs:1194`** <br/> *Or* <br/> **`APIServerPublicIP:1194`** `(only known after cluster creation)`  | UDP           | 1194      | For tunneled secure communication between the nodes and the control plane. This isn't required for [private clusters][private-clusters], or for clusters with the *konnectivity-agent* enabled. |
+| **`*:9000`** <br/> *Or* <br/> [ServiceTag](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags) - **`AzureCloud.<Region>:9000`** <br/> *Or* <br/> [Regional CIDRs](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#discover-service-tags-by-using-downloadable-json-files) - **`RegionCIDRs:9000`** <br/> *Or* <br/> **`APIServerPublicIP:9000`** `(only known after cluster creation)`  | TCP           | 9000      | For tunneled secure communication between the nodes and the control plane. This isn't required for [private clusters][private-clusters], or for clusters with the *konnectivity-agent* enabled. |
+| **`*:123`** or **`ntp.ubuntu.com:123`** (if using Azure Firewall network rules)  | UDP      | 123     | Required for Network Time Protocol (NTP) time synchronization on Linux nodes. This isn't required for nodes provisioned after March 2021.                 |
+| **`CustomDNSIP:53`** `(if using custom DNS servers)` | TCP and UDP | 53 | If you're using custom DNS servers, ensure that cluster nodes can reach them over both TCP and UDP port 53. The DNS server must listen and respond on both protocols. |
+| **`APIServerPublicIP:443`** `(if running pods/deployments, like Ingress Controller, that access the API Server)` | TCP      | 443     | Required if running pods/deployments that access the API Server (like Ingress Controller), those pods/deployments would use the API IP. This port isn't required for [private clusters][private-clusters]. |
+
+> [!IMPORTANT]
+> DNS must be allowed over both UDP and TCP port 53. DNS clients can retry over TCP when a UDP response is truncated, when a response is too large, or when the configured forwarding behavior selects TCP. This requirement also applies when LocalDNS is configured with `PreferUDP`.
+>
+> Ensure that NSGs, firewalls, NVAs, and custom DNS server access controls allow both protocols from every AKS node subnet.
+
+### Azure Global required FQDN / application rules
+
+| Destination FQDN                 | Port            | Use      |
+|----------------------------------|-----------------|----------|
+| **`*.hcp.<location>.azmk8s.io`** | **`HTTPS:443`** | Required for Node <-> API server communication. Replace *\<location\>* with the region where your AKS cluster is deployed. This is required for clusters with *konnectivity-agent* enabled. Konnectivity also uses Application-Layer Protocol Negotiation (ALPN) to communicate between agent and server. Blocking or rewriting the ALPN extension will cause a failure. [Private clusters][private-clusters] use the Konnectivity tunnel. However, this rule is not required because communication between the nodes and the API server flows over private networking. |
+| **`mcr.microsoft.com`**          | **`HTTPS:443`** | Required to access images in Microsoft Container Registry (MCR). This registry contains first-party images/charts (for example, coreDNS, etc.). These images are required for the correct creation and functioning of the cluster, including scale and upgrade operations.  |
+| **`*.data.mcr.microsoft.com`**, **`mcr-0001.mcr-msedge.net`**   | **`HTTPS:443`** | Required for MCR storage backed by the Azure content delivery network (CDN). |
+| **`management.azure.com`**       | **`HTTPS:443`** | Required for Kubernetes operations against the Azure API. |
+| **`login.microsoftonline.com`**  | **`HTTPS:443`** | Required for Microsoft Entra authentication. |
+| **`packages.microsoft.com`**     | **`HTTPS:443`** | This address is the Microsoft packages repository used for cached *apt-get* operations.  Example packages include Moby, PowerShell, and Azure CLI. |
+| **`acs-mirror.azureedge.net`**   | **`HTTPS:443`** | This address is for the repository required to download and install required binaries like kubenet and Azure CNI. |
+| **`packages.aks.azure.com`**     | **`HTTPS:443`** | This address will be replacing `acs-mirror.azureedge.net` in the future and will be used to download and install required Kubernetes and Azure CNI binaries. |
+
+### Microsoft Azure operated by 21Vianet required network rules
+
+For information about retired Microsoft Defender for Cloud features, see [Microsoft Defender for Containers](#microsoft-defender-for-containers).
+
+| Destination Endpoint                                                             | Protocol | Port    | Use  |
+|----------------------------------------------------------------------------------|----------|---------|------|
+| **`*:1194`** <br/> *Or* <br/> [ServiceTag](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags) - **`AzureCloud.<Region>:1194`** <br/> *Or* <br/> [Regional CIDRs](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#discover-service-tags-by-using-downloadable-json-files) - **`RegionCIDRs:1194`** <br/> *Or* <br/> **`APIServerPublicIP:1194`** `(only known after cluster creation)`  | UDP           | 1194      | For tunneled secure communication between the nodes and the control plane. |
+| **`*:9000`** <br/> *Or* <br/> [ServiceTag](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags) - **`AzureCloud.<Region>:9000`** <br/> *Or* <br/> [Regional CIDRs](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#discover-service-tags-by-using-downloadable-json-files) - **`RegionCIDRs:9000`** <br/> *Or* <br/> **`APIServerPublicIP:9000`** `(only known after cluster creation)`  | TCP           | 9000      | For tunneled secure communication between the nodes and the control plane. |
+| **`*:22`** <br/> *Or* <br/> [ServiceTag](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags) - **`AzureCloud.<Region>:22`** <br/> *Or* <br/> [Regional CIDRs](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#discover-service-tags-by-using-downloadable-json-files) - **`RegionCIDRs:22`** <br/> *Or* <br/> **`APIServerPublicIP:22`** `(only known after cluster creation)`  | TCP           | 22      | For tunneled secure communication between the nodes and the control plane. |
+| **`*:123`** or **`ntp.ubuntu.com:123`** (if using Azure Firewall network rules)  | UDP      | 123     | Required for Network Time Protocol (NTP) time synchronization on Linux nodes.                 |
+| **`CustomDNSIP:53`** `(if using custom DNS servers)`                             | UDP      | 53      | If you're using custom DNS servers, you must ensure they're accessible by the cluster nodes. |
+| **`APIServerPublicIP:443`** `(if running pods/deployments, like Ingress Controller, that access the API Server)` | TCP      | 443     | Required if running pods/deployments that access the API Server (like Ingress Controller), those pod/deployments would use the API IP.  |
+
+### Microsoft Azure operated by 21Vianet required FQDN / application rules
+
+For information about retired Microsoft Defender for Cloud features, see [Microsoft Defender for Containers](#microsoft-defender-for-containers).
+
+| Destination FQDN                               | Port            | Use      |
+|------------------------------------------------|-----------------|----------|
+| **`*.hcp.<location>.cx.prod.service.azk8s.cn`**| **`HTTPS:443`** | Required for Node <-> API server communication. Replace *\<location\>* with the region where your AKS cluster is deployed. |
+| **`*.tun.<location>.cx.prod.service.azk8s.cn`**| **`HTTPS:443`** | Required for Node <-> API server communication. Replace *\<location\>* with the region where your AKS cluster is deployed. |
+|  **`mcr.microsoft.com`**                       | **`HTTPS:443`** | Required to access images in Microsoft Container Registry (MCR). This registry contains first-party images/charts (for example, coreDNS, etc.). These images are required for the correct creation and functioning of the cluster, including scale and upgrade operations. |
+| **`*.data.mcr.microsoft.com`**                  | **`HTTPS:443`** | Required for MCR storage backed by the Azure Content Delivery Network (CDN). |
+| **`management.chinacloudapi.cn`**              | **`HTTPS:443`** | Required for Kubernetes operations against the Azure API. |
+| **`login.chinacloudapi.cn`**                   | **`HTTPS:443`** | Required for Microsoft Entra authentication. |
+| **`packages.microsoft.com`**                   | **`HTTPS:443`** | This address is the Microsoft packages repository used for cached *apt-get* operations.  Example packages include Moby, PowerShell, and Azure CLI. |
+| **`*.azk8s.cn`**                               | **`HTTPS:443`** | This address is for the repository required to download and install required binaries like kubenet and Azure CNI. |
+| **`mcr.azure.cn`**, **`*.data.mcr.azure.cn`**   | **`HTTPS:443`** | Required to access images in Microsoft Container Registry (MCR) in China Cloud (Mooncake). This registry serves as a cache for mcr.microsoft.com with improved reliability and performance. |
+
+### Azure US Government required network rules
+
+| Destination Endpoint                                                             | Protocol | Port    | Use  |
+|----------------------------------------------------------------------------------|----------|---------|------|
+| **`*:1194`** <br/> *Or* <br/> [ServiceTag](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags) - **`AzureCloud.<Region>:1194`** <br/> *Or* <br/> [Regional CIDRs](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#discover-service-tags-by-using-downloadable-json-files) - **`RegionCIDRs:1194`** <br/> *Or* <br/> **`APIServerPublicIP:1194`** `(only known after cluster creation)`  | UDP           | 1194      | For tunneled secure communication between the nodes and the control plane. |
+| **`*:9000`** <br/> *Or* <br/> [ServiceTag](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags) - **`AzureCloud.<Region>:9000`** <br/> *Or* <br/> [Regional CIDRs](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#discover-service-tags-by-using-downloadable-json-files) - **`RegionCIDRs:9000`** <br/> *Or* <br/> **`APIServerPublicIP:9000`** `(only known after cluster creation)`  | TCP           | 9000      | For tunneled secure communication between the nodes and the control plane. |
+| **`*:123`** or **`ntp.ubuntu.com:123`** (if using Azure Firewall network rules)  | UDP      | 123     | Required for Network Time Protocol (NTP) time synchronization on Linux nodes.                 |
+| **`CustomDNSIP:53`** `(if using custom DNS servers)`                             | UDP      | 53      | If you're using custom DNS servers, you must ensure they're accessible by the cluster nodes. |
+| **`APIServerPublicIP:443`** `(if running pods/deployments, like Ingress Controller, that access the API Server)` | TCP      | 443     | Required if running pods/deployments that access the API Server (like Ingress Controller), those pods/deployments would use the API IP.  |
+
+### Azure US Government required FQDN / application rules
+
+| Destination FQDN                                        | Port            | Use      |
+|---------------------------------------------------------|-----------------|----------|
+| **`*.hcp.<location>.cx.aks.containerservice.azure.us`** | **`HTTPS:443`** | Required for Node <-> API server communication. Replace *\<location\>* with the region where your AKS cluster is deployed.|
+| **`mcr.microsoft.com`**                                 | **`HTTPS:443`** | Required to access images in Microsoft Container Registry (MCR). This registry contains first-party images/charts (for example, coreDNS, etc.). These images are required for the correct creation and functioning of the cluster, including scale and upgrade operations. |
+| **`*.data.mcr.microsoft.com`**                          | **`HTTPS:443`** | Required for MCR storage backed by the Azure content delivery network (CDN). |
+| **`management.usgovcloudapi.net`**                      | **`HTTPS:443`** | Required for Kubernetes operations against the Azure API. |
+| **`login.microsoftonline.us`**                          | **`HTTPS:443`** | Required for Microsoft Entra authentication. |
+| **`packages.microsoft.com`**                            | **`HTTPS:443`** | This address is the Microsoft packages repository used for cached *apt-get* operations.  Example packages include Moby, PowerShell, and Azure CLI. |
+| **`acs-mirror.azureedge.net`**                          | **`HTTPS:443`** | This address is for the repository required to install required binaries like kubenet and Azure CNI. |
+| **`packages.aks.azure.com`**                            | **`HTTPS:443`** | This address will be replacing `acs-mirror.azureedge.net` in the future and will be used to download and install required Kubernetes and Azure CNI binaries. |
+
+## Optional recommended FQDN / application rules for AKS clusters
+
+The following FQDN / application rules aren't required, but are recommended for AKS clusters:
+
+| Destination FQDN                                                               | Port          | Use      |
+|--------------------------------------------------------------------------------|---------------|----------|
+| **`security.ubuntu.com`, `azure.archive.ubuntu.com`, `changelogs.ubuntu.com`** | **`HTTP:80`** | This address lets the Linux cluster nodes download the required security patches and updates. |
+| **`snapshot.ubuntu.com`** | **`HTTPS:443`** | This address lets the Linux cluster nodes download the required security patches and updates from ubuntu snapshot service. |
+
+If you choose to block/not allow these FQDNs, the nodes will only receive OS updates when you do a [node image upgrade](https://learn.microsoft.com/en-us/azure/aks/node-image-upgrade) or [cluster upgrade](https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster). Keep in mind that node image upgrades also come with updated packages including security fixes.
+
+## GPU enabled AKS clusters required FQDN / application rules
+
+| Destination FQDN                        | Port      | Use      |
+|-----------------------------------------|-----------|----------|
+| **`nvidia.github.io`**                  | **`HTTPS:443`** | This address is used for correct driver installation and operation on GPU-based nodes. |
+| **`us.download.nvidia.com`**            | **`HTTPS:443`** | This address is used for correct driver installation and operation on GPU-based nodes. |
+| **`download.docker.com`**             | **`HTTPS:443`** | This address is used for correct driver installation and operation on GPU-based nodes. |
+
+## Windows Server based node pools required FQDN / application rules
+
+| Destination FQDN                                                           | Port      | Use      |
+|----------------------------------------------------------------------------|-----------|----------|
+| **`onegetcdn.azureedge.net, go.microsoft.com`**                            | **`HTTPS:443`** | To install Windows-related binaries |
+| **`*.mp.microsoft.com, www.msftconnecttest.com, ctldl.windowsupdate.com`** | **`HTTP:80`**   | To install Windows-related binaries |
+
+If you choose to block/not allow these FQDNs, the nodes will only receive OS updates when you do a [node image upgrade](https://learn.microsoft.com/en-us/azure/aks/node-image-upgrade) or [cluster upgrade](https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster). Keep in mind that Node Image Upgrades also come with updated packages including security fixes.
+
+## AKS features, add-ons, and integrations
+
+### Workload identity
+
+#### Workload identity required FQDN / application rules
+
+| Destination FQDN                                                           | Port      | Use      |
+|----------------------------------------------------------------------------|-----------|----------|
+| **`login.microsoftonline.com`** or **`login.chinacloudapi.cn`** or **`login.microsoftonline.us`** | **`HTTPS:443`** | Required for Microsoft Entra authentication. |
+
+### Microsoft Defender for Containers
+
+> [!IMPORTANT]
+>
+> All Microsoft Defender for Cloud features will be officially retired in the Azure in China region on August 18, 2026. Due to this upcoming retirement, Azure in China customers are no longer able to onboard new subscriptions to the service. A new subscription is any subscription that was not already onboarded to the Microsoft Defender for Cloud service prior to August 18, 2025, the date of the retirement announcement. For more information on the retirement, see [Microsoft Defender for Cloud Deprecation in Microsoft Azure Operated by 21Vianet Announcement](https://aka.ms/mdcretirementinchina).
+>
+> Customers should work with their account representatives for Microsoft Azure operated by 21Vianet to assess the impact of this retirement on their own operations.
+
+#### Microsoft Defender for Containers required FQDN / application rules
+
+| FQDN                                                       | Port      | Use      |
+|------------------------------------------------------------|-----------|----------|
+| **`login.microsoftonline.com`** <br/> **`login.microsoftonline.us`** (Azure Government) <br/> **`login.microsoftonline.cn`** (Azure operated by 21Vianet) | **`HTTPS:443`** | Required for Microsoft Entra authentication. |
+| **`*.ods.opinsights.azure.com`** <br/> **`*.ods.opinsights.azure.us`** (Azure Government) <br/> **`*.ods.opinsights.azure.cn`** (Azure operated by 21Vianet)| **`HTTPS:443`** | Required for Microsoft Defender to upload security events to the cloud.|
+| **`*.oms.opinsights.azure.com`** <br/> **`*.oms.opinsights.azure.us`** (Azure Government) <br/> **`*.oms.opinsights.azure.cn`** (Azure operated by 21Vianet)| **`HTTPS:443`** | Required to authenticate with Log Analytics workspaces.|
+|**`*.cloud.defender.microsoft.com`**|**`HTTPS:443`**|Required for Microsoft Defender to upload security events to the cloud.|
+
+### Azure Key Vault provider for Secrets Store CSI Driver
+
+If using network isolated clusters, it's recommended to set up [private endpoint to access Azure Key Vault][akv-privatelink].
+
+If your cluster has outbound type user-defined routing and Azure Firewall, the following network rules and application rules are applicable:
+
+#### Azure Key Vault provider for Secrets Store CSI Driver required FQDN / application rules
+
+| FQDN                                          | Port      | Use      |
+|-----------------------------------------------|-----------|----------|
+| **`vault.azure.net`** | **`HTTPS:443`** | Required for CSI Secret Store add-on pods to talk to Azure Key Vault server.|
+| **`*.vault.usgovcloudapi.net`** | **`HTTPS:443`** | Required for CSI Secret Store add-on pods to talk to Azure Key Vault server in Azure Government.|
+
+### Azure Monitor - Managed Prometheus, Container Insights, and Azure Monitor Application Insights Autoinstrumentation
+
+If using network isolated clusters, it's recommended to set up [private endpoint based ingestion][azure-monitor-ingestion-private-link], which is supported for Managed Prometheus (Azure Monitor workspace), Container insights (Log Analytics workspace), and Azure Monitor Application Insights Autoinstrumentation (Application Insights resource).
+
+If your cluster has outbound type user-defined routing and Azure Firewall, the following network rules and application rules are applicable:
+
+#### Required network rules
+
+| Destination Endpoint                                                             | Protocol | Port    | Use  |
+|----------------------------------------------------------------------------------|----------|---------|------|
+| [ServiceTag](https://learn.microsoft.com/en-us/azure/virtual-network/service-tags-overview#available-service-tags) - **`AzureMonitor:443`**  | TCP           | 443      | This endpoint is used to send metrics data and logs to Azure Monitor and Log Analytics. |
+
+#### Azure public cloud required FQDN / application rules
+
+| Endpoint| Purpose | Port |
+|:---|:---|:---|
+| **`*.ods.opinsights.azure.com`** | Data ingestion | 443 |
+| **`*.oms.opinsights.azure.com`** | Azure Monitor agent (AMA) onboarding | 443 |
+| **`dc.services.visualstudio.com`** | For agent telemetry that uses Azure Public Cloud Application Insights | 443 |
+| **`*.in.applicationinsights.azure.com`** | Application Insights Autoinstrumentation. To limit the scope, can be changed to only allow endpoints in connection strings for the destination resources | 443 |
+| **`*.monitoring.azure.com`** | Azure Monitor metrics ingestion endpoint | 443 |
+| **`login.microsoftonline.com`** | Required for Microsoft Entra authentication | 443 |
+| **`global.handler.control.monitor.azure.com`** | Access control service | 443 |
+| **`*.ingest.monitor.azure.com`** | Container Insights - logs ingestion endpoint (DCE) | 443 |
+| **`*.metrics.ingest.monitor.azure.com`** | Azure monitor managed service for Prometheus - metrics ingestion endpoint (DCE) | 443 |
+| **`<cluster-region-name>.handler.control.monitor.azure.com`** | Fetch data collection rules for specific cluster | 443 |
+
+#### Microsoft Azure operated by 21Vianet cloud required FQDN / application rules
+
+For information about retired Microsoft Defender for Cloud features, see [Microsoft Defender for Containers](#microsoft-defender-for-containers).
+
+| Endpoint| Purpose | Port |
+|:---|:---|:---|
+| **`*.ods.opinsights.azure.cn`** | Data ingestion | 443 |
+| **`*.oms.opinsights.azure.cn`** | Azure Monitor agent (AMA) onboarding | 443 |
+| **`dc.services.visualstudio.com`** | For agent telemetry that uses Azure Public Cloud Application Insights | 443 |
+| **`*.in.applicationinsights.azure.com`** | Application Insights Autoinstrumentation. To limit the scope, can be changed to only allow endpoints in connection strings for the destination resources | 443 |
+| **`global.handler.control.monitor.azure.cn`** | Access control service | 443 |
+| **`<cluster-region-name>.handler.control.monitor.azure.cn`** | Fetch data collection rules for specific cluster | 443 |
+| **`*.ingest.monitor.azure.cn`** | Container Insights - logs ingestion endpoint (DCE) | 443 |
+| **`*.metrics.ingest.monitor.azure.cn`** | Azure monitor managed service for Prometheus - metrics ingestion endpoint (DCE) | 443 |
+
+#### Azure Government cloud required FQDN / application rules
+
+| Endpoint| Purpose | Port |
+|:---|:---|:---|
+| **`*.ods.opinsights.azure.us`** | Data ingestion | 443 |
+| **`*.oms.opinsights.azure.us`** | Azure Monitor agent (AMA) onboarding | 443 |
+| **`dc.services.visualstudio.com`** | For agent telemetry that uses Azure Public Cloud Application Insights | 443 |
+| **`*.in.applicationinsights.azure.com`** | Application Insights Autoinstrumentation. To limit the scope, can be changed to only allow endpoints in connection strings for the destination resources | 443 |
+| **`global.handler.control.monitor.azure.us`** | Access control service | 443 |
+| **`<cluster-region-name>.handler.control.monitor.azure.us`** | Fetch data collection rules for specific cluster | 443 |
+| **`*.ingest.monitor.azure.us`** | Container Insights - logs ingestion endpoint (DCE) | 443 |
+| **`*.metrics.ingest.monitor.azure.us`** | Azure monitor managed service for Prometheus - metrics ingestion endpoint (DCE) | 443 |
+
+### Azure Policy
+
+#### Azure Policy required FQDN / application rules
+
+| FQDN                                          | Port      | Use      |
+|-----------------------------------------------|-----------|----------|
+| **`data.policy.core.windows.net`** | **`HTTPS:443`** | This address is used to pull the Kubernetes policies and to report cluster compliance status to policy service. |
+| **`store.policy.core.windows.net`** | **`HTTPS:443`** | This address is used to pull the Gatekeeper artifacts of built-in policies. |
+| **`dc.services.visualstudio.com`** | **`HTTPS:443`** | Azure Policy add-on that sends telemetry data to applications insights endpoint. |
+
+#### Microsoft Azure operated by 21Vianet required FQDN / application rules
+
+For information about retired Microsoft Defender for Cloud features, see [Microsoft Defender for Containers](#microsoft-defender-for-containers).
+
+| FQDN                                          | Port      | Use      |
+|-----------------------------------------------|-----------|----------|
+| **`data.policy.azure.cn`** | **`HTTPS:443`** | This address is used to pull the Kubernetes policies and to report cluster compliance status to policy service. |
+| **`store.policy.azure.cn`** | **`HTTPS:443`** | This address is used to pull the Gatekeeper artifacts of built-in policies. |
+
+#### Azure US Government required FQDN / application rules
+
+| FQDN                                          | Port      | Use      |
+|-----------------------------------------------|-----------|----------|
+| **`data.policy.azure.us`** | **`HTTPS:443`** | This address is used to pull the Kubernetes policies and to report cluster compliance status to policy service. |
+| **`store.policy.azure.us`** | **`HTTPS:443`** | This address is used to pull the Gatekeeper artifacts of built-in policies. |
+
+### AKS cost analysis add-on
+
+#### AKS cost analysis add-on required FQDN / application rules
+
+| FQDN                                                       | Port      | Use      |
+|------------------------------------------------------------|-----------|----------|
+| **`management.azure.com`** <br/> **`management.usgovcloudapi.net`** (Azure Government) <br/> **`management.chinacloudapi.cn`** (Azure operated by 21Vianet)| **`HTTPS:443`** | Required for Kubernetes operations against the Azure API. |
+| **`login.microsoftonline.com`** <br/> **`login.microsoftonline.us`** (Azure Government) <br/> **`login.microsoftonline.cn`** (Azure operated by 21Vianet) | **`HTTPS:443`** | Required for Microsoft Entra authentication. |
+
+## Cluster extensions
+
+### Cluster extensions required FQDN / application rules
+
+| FQDN | Port               | Use |
+|-----------------------------------------------|-----------|----------|
+| **`<region>.dp.kubernetesconfiguration.azure.com`** | **`HTTPS:443`** | This address is used to fetch configuration information from the Cluster Extensions service and report extension status to the service.|
+| **`mcr.microsoft.com, *.data.mcr.microsoft.com`** | **`HTTPS:443`** | This address is required to pull container images for installing cluster extension agents on AKS cluster.|
+|**`arcmktplaceprod.azurecr.io`**|**`HTTPS:443`**|This address is required to pull container images for installing marketplace extensions on AKS cluster.|
+| **`arcmktplaceprod.centralindia.data.azurecr.io`** | **`HTTPS:443`** | This address is for the Central India regional data endpoint and is required to pull container images for installing marketplace extensions on AKS cluster.|
+| **`arcmktplaceprod.japaneast.data.azurecr.io`** | **`HTTPS:443`** | This address is for the Japan East regional data endpoint and is required to pull container images for installing marketplace extensions on AKS cluster.|
+| **`arcmktplaceprod.westus2.data.azurecr.io`** | **`HTTPS:443`** | This address is for the West US 2 regional data endpoint and is required to pull container images for installing marketplace extensions on AKS cluster.|
+| **`arcmktplaceprod.westeurope.data.azurecr.io`** | **`HTTPS:443`** | This address is for the West Europe regional data endpoint and is required to pull container images for installing marketplace extensions on AKS cluster.|
+| **`arcmktplaceprod.eastus.data.azurecr.io`** | **`HTTPS:443`** | This address is for the East US regional data endpoint and is required to pull container images for installing marketplace extensions on AKS cluster.|
+|**`*.ingestion.msftcloudes.com, *.microsoftmetrics.com`**|**`HTTPS:443`**|This address is used to send agents metrics data to Azure.|
+|**`marketplaceapi.microsoft.com`**|**`HTTPS:443`**|This address is used to send custom meter-based usage to the commerce metering API.|
+
+#### Azure US Government required FQDN / application rules
+
+| FQDN | Port | Use |
+|-----------------------------------------------|-----------|----------|
+| **`<region>.dp.kubernetesconfiguration.azure.us`** | **`HTTPS:443`** | This address is used to fetch configuration information from the Cluster Extensions service and report extension status to the service. |
+| **`mcr.microsoft.com, *.data.mcr.microsoft.com`** | **`HTTPS:443`** | This address is required to pull container images for installing cluster extension agents on AKS cluster.|
+
+> [!NOTE]
+>
+> For any add-ons that aren't explicitly stated here, the core requirements cover it.
+
+### Istio-based service mesh add-on
+
+If you are using the [Istio-based service mesh add-on][istio-addon] and setting up Istio with a [plug-in certificate authority (CA)][istio-plugin-ca] or [secure ingress gateways][istio-secure-gateways], Azure Key Vault provider for Secrets Store CSI Driver is required for these features. Outbound network requirements for Azure Key Vault provider for Secrets Store CSI Driver can be found [here][akv-outbound].
+
+### Application routing add-on
+
+Application routing add-on supports SSL termination at the ingress with certificates stored in Azure Key Vault. Outbound network requirements for Azure Key Vault provider for Secrets Store CSI Driver can be found [here][akv-outbound].
+
+## Next steps
+
+In this article, you learned what ports and addresses to allow if you want to restrict egress traffic for the cluster.
+
+If you want to restrict how pods communicate between themselves and East-West traffic restrictions within cluster see [Secure traffic between pods using network policies in AKS][use-network-policies].
+
+[private-clusters]: https://learn.microsoft.com/en-us/azure/aks/private-clusters
+[use-network-policies]: https://learn.microsoft.com/en-us/azure/aks/use-network-policies
+[network-isolated-cluster]: https://learn.microsoft.com/en-us/azure/aks/concepts-network-isolated
+[akv-outbound]: #azure-key-vault-provider-for-secrets-store-csi-driver
+[istio-addon]: https://learn.microsoft.com/en-us/azure/aks/istio-deploy-addon
+[istio-plugin-ca]: https://learn.microsoft.com/en-us/azure/aks/istio-plugin-ca
+[istio-secure-gateways]: https://learn.microsoft.com/en-us/azure/aks/istio-secure-gateway
+
+[azure-monitor-ingestion-private-link]: https://learn.microsoft.com/en-us/azure/azure-monitor/containers/kubernetes-monitoring-private-link#container-insights-log-analytics-workspace
+[akv-privatelink]: https://learn.microsoft.com/en-us/azure/key-vault/general/private-link-service?tabs=portal

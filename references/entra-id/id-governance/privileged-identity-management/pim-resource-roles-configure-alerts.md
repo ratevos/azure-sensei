@@ -1,0 +1,55 @@
+# Configure security alerts for Azure roles in Privileged Identity Management
+
+> Source: https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-configure-alerts  
+> Microsoft doc last updated: 04/23/2026
+
+
+## Overview
+
+Privileged Identity Management (PIM) generates alerts when there's suspicious or unsafe activity in your organization in Microsoft Entra ID. When an alert is triggered, it shows up on the Alerts page.
+
+> [!NOTE]
+> One event in Privileged Identity Management can generate email notifications to multiple recipients – assignees, approvers, or administrators. The maximum number of notifications sent per one event is 1,000. If the number of recipients exceeds 1,000 – only the first 1,000 recipients receive an email notification. This limit doesn't prevent other assignees, administrators, or approvers from using their permissions in Microsoft Entra ID and Privileged Identity Management.
+
+## Review alerts
+
+Select an alert to see a report that lists the users or roles that triggered the alert, along with remediation guidance.
+
+## Alerts
+
+Alert | Severity | Trigger | Recommendation
+--- | --- | --- | ---
+**Too many owners assigned to a resource** | Medium | Too many users have the owner role. | Review the users in the list and reassign some to less privileged roles.
+**Too many permanent owners assigned to a resource** | Medium | Too many users are permanently assigned to a role. | Review the users in the list and reassign some to require activation for role use.
+**Duplicate role created** | Medium | Multiple roles have the same criteria. | Use only one of these roles.
+**Roles are being assigned outside of Privileged Identity Management** | High | A role is managed directly through the Azure IAM resource, or the Azure Resource Manager API. | Review the users in the list and remove them from privileged roles assigned outside of Privileged Identity Management.
+
+> [!NOTE]
+> For the **Roles are being assigned outside of Privileged Identity Management** alerts, you might encounter duplicate notifications. These duplications might primarily be related to a potential live site incident where notifications are being sent again.
+
+### Severity
+
+- **High**: Requires immediate action because of a policy violation. 
+- **Medium**: Doesn't require immediate action but signals a potential policy violation.
+- **Low**: Doesn't require immediate action but suggests a preferred policy change.
+
+## Configure security alert settings
+
+Follow these steps to configure security alerts for Azure roles in Privileged Identity Management:
+
+1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) as at least a [Privileged Role Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#privileged-role-administrator).
+
+1. Browse to **ID Governance** > **Privileged Identity Management** > **Azure resources**. Select your subscription > **Alerts** > **Setting**. For information about how to add the Privileged Identity Management tile to your dashboard, see [Start using Privileged Identity Management](https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-getting-started).
+
+    
+
+1. Customize settings on the different alerts to work with your environment and security goals.
+
+    
+
+> [!NOTE]
+> "Roles are being assigned outside of Privileged Identity Management" alert is triggered for role assignments created for Azure subscriptions and isn't triggered for role assignments on Management Groups, Resource Groups, or Resource scope.
+
+## Next steps
+
+- [Configure Azure resource role settings in Privileged Identity Management](https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-resource-roles-configure-role-settings)

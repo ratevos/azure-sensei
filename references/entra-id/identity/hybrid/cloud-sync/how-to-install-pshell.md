@@ -1,0 +1,92 @@
+# Install the Microsoft Entra Connect cloud provisioning agent using a command-line interface (CLI) and PowerShell
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-install-pshell  
+> Microsoft doc last updated: 09/18/2025
+
+This article shows you how to install the Microsoft Entra provisioning agent by using PowerShell cmdlets.
+ 
+>[!NOTE]
+>This article deals with installing the provisioning agent by using the command-line interface (CLI). For information on how to install the Microsoft Entra provisioning agent by using the wizard, see [Install the Microsoft Entra provisioning agent](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-install).
+
+## Prerequisite
+
+The Windows server must have TLS 1.2 enabled before you install the Microsoft Entra provisioning agent by using PowerShell cmdlets. To enable TLS 1.2, follow the steps in [Prerequisites for Microsoft Entra Cloud Sync](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-prerequisites#tls-requirements).
+
+>[!IMPORTANT]
+>The following installation instructions assume that all the [prerequisites](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-prerequisites) were met.
+
+<a name='install-the-azure-ad-connect-provisioning-agent-by-using-powershell-cmdlets-'></a>
+
+## Install the Microsoft Entra provisioning agent by using PowerShell cmdlets 
+
+>[!NOTE]
+>By default, the Microsoft Entra provisioning agent is installed in the default Azure environment.
+
+1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com) as at least a [Hybrid Identity Administrator](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/permissions-reference#hybrid-identity-administrator).
+
+1. Browse to **Entra ID** > **Entra Connect** > **Cloud sync**.
+
+   
+ 3. Select **Manage**.
+ 4. Select **Download provisioning agent**
+ 5. On the right, select **Accept terms and download**.
+ 6. For the purposes of these instructions, the agent was downloaded to the C:\temp folder.
+ 7. Install ProvisioningAgent in quiet mode.
+       ```
+      $installerProcess = Start-Process 'c:\temp\ProvisioningAgentSetup.exe' /quiet -NoNewWindow -PassThru 
+      $installerProcess.WaitForExit()
+
+       ```
+ 8. Import the Provisioning Agent PS module.
+       ```
+       Import-Module "C:\Program Files\Microsoft Azure AD Connect Provisioning Agent\Microsoft.CloudSync.PowerShell.dll" 
+       ```
+ 9. Connect to Microsoft Entra ID by using an account with the hybrid identity role. You can customize this section to fetch a password from a secure store. 
+       ```
+       $hybridAdminPassword = ConvertTo-SecureString -String "Hybrid Identity Administrator password" -AsPlainText -Force 
+    
+       $hybridAdminCreds = New-Object System.Management.Automation.PSCredential -ArgumentList ("HybridIDAdmin@contoso.onmicrosoft.com", $hybridAdminPassword) 
+       
+       Connect-AADCloudSyncAzureAD -Credential $hybridAdminCreds 
+       ```
+ 10. Add the gMSA account, and provide credentials of the domain admin to create the default gMSA account.
+       ```
+       $domainAdminPassword = ConvertTo-SecureString -String "Domain admin password" -AsPlainText -Force 
+    
+       $domainAdminCreds = New-Object System.Management.Automation.PSCredential -ArgumentList ("DomainName\DomainAdminAccountName", $domainAdminPassword) 
+    
+       Add-AADCloudSyncGMSA -Credential $domainAdminCreds 
+       ```
+ 11. Or use the preceding cmdlet to provide a precreated gMSA account.
+       ```
+       Add-AADCloudSyncGMSA -CustomGMSAName preCreatedGMSAName$ 
+       ```
+ 12. Add the domain.
+       ```
+       $contosoDomainAdminPassword = ConvertTo-SecureString -String "Domain admin password" -AsPlainText -Force 
+    
+       $contosoDomainAdminCreds = New-Object System.Management.Automation.PSCredential -ArgumentList ("DomainName\DomainAdminAccountName", $contosoDomainAdminPassword) 
+    
+       Add-AADCloudSyncADDomain -DomainName contoso.com -Credential $contosoDomainAdminCreds 
+       ```
+ 13. Or use the preceding cmdlet to configure preferred domain controllers.
+       ```
+       $preferredDCs = @("PreferredDC1", "PreferredDC2", "PreferredDC3") 
+    
+       Add-AADCloudSyncADDomain -DomainName contoso.com -Credential $contosoDomainAdminCreds -PreferredDomainControllers $preferredDCs 
+       ```
+ 14. To add more domains, repeat the previous step. Provide the account names and domain names of the respective domains.
+ 15. Restart the service.
+       ```
+       Restart-Service -Name AADConnectProvisioningAgent  
+       ```
+ 16. To create the cloud sync configuration, go to the Microsoft Entra admin center.
+
+## Provisioning agent gMSA PowerShell cmdlets
+After you install the agent, you can apply more granular permissions to the gMSA. For information and step-by-step instructions on how to configure the permissions, see [Microsoft Entra Connect cloud provisioning agent gMSA PowerShell cmdlets](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-gmsa-cmdlets).
+
+## Next steps 
+
+- [What is provisioning?](https://learn.microsoft.com/en-us/entra/identity/hybrid/what-is-provisioning)
+- [Microsoft Entra Connect cloud provisioning agent gMSA PowerShell cmdlets](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/how-to-gmsa-cmdlets)
+- [What is Microsoft Entra Cloud Sync?](https://learn.microsoft.com/en-us/entra/identity/hybrid/cloud-sync/what-is-cloud-sync)

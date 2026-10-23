@@ -1,0 +1,63 @@
+# App consent permissions for custom roles in Microsoft Entra ID
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/custom-consent-permissions  
+> Microsoft doc last updated: 03/30/2025
+
+
+This article contains the currently available app consent permissions for custom role definitions in Microsoft Entra ID. In this article, you'll find the permissions required for some common scenarios related to app consent and permissions.
+
+## License requirements
+
+Using this feature requires Microsoft Entra ID P1 licenses. To find the right license for your requirements, see [Compare generally available features of Microsoft Entra ID](https://www.microsoft.com/security/business/identity-access-management/azure-ad-pricing).
+
+## App consent permissions
+
+Use the permissions listed in this article to manage app consent policies, as well as the permission to grant consent to apps.
+
+> [!NOTE]
+> The Microsoft Entra admin center does not yet support adding the permissions listed in this article to a custom role definition. You must [use Microsoft Graph PowerShell to create a custom role](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/custom-create) with the permissions listed in this article.
+
+#### Granting delegated permissions to apps on behalf of self (user consent)
+
+To allow users to grant consent to applications on behalf of themselves (user consent), subject to an app consent policy.
+
+- microsoft.directory/servicePrincipals/managePermissionGrantsForSelf.{id}
+
+Where `{id}` is replaced by the ID of an [app consent policy](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-app-consent-policies) which will set the conditions which must be met for this permission to be active.
+
+For example, to allow users to grant consent on their own behalf, subject to the built-in app consent policy with ID `microsoft-user-default-low`, you would use the permission `...managePermissionGrantsForSelf.microsoft-user-default-low`.
+
+#### Granting permissions to apps on behalf of all (admin consent)
+
+To delegate tenant-wide admin consent to apps, for both delegated permissions and application permissions (app roles):
+
+- microsoft.directory/servicePrincipals/managePermissionGrantsForAll.{id}
+
+Where `{id}` is replaced by the ID of an [app consent policy](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-app-consent-policies) which will set the conditions which must be met for this permission to be usable.
+
+For example, to allow role assignees to grant tenant-wide admin consent to apps subject to a custom [app consent policy](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-app-consent-policies) with ID `low-risk-any-app`, you would use the permission `microsoft.directory/servicePrincipals/managePermissionGrantsForAll.low-risk-any-app`.
+
+#### Managing app consent policies
+
+To delegate the creation, update and deletion of [app consent policies](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/manage-app-consent-policies).
+
+- microsoft.directory/permissionGrantPolicies/create
+- microsoft.directory/permissionGrantPolicies/standard/read
+- microsoft.directory/permissionGrantPolicies/basic/update
+- microsoft.directory/permissionGrantPolicies/delete
+
+## Full list of permissions
+
+> | Permission | Description |
+> | ---------- | ----------- |
+> | microsoft.directory/servicePrincipals/managePermissionGrantsForSelf.{id} | Grants the ability to consent to apps on behalf of self (user consent), subject to app consent policy `{id}`. |
+> | microsoft.directory/servicePrincipals/managePermissionGrantsForAll.{id} | Grants the permission to consent to apps on behalf of all (tenant-wide admin consent), subject to app consent policy `{id}`. |
+> | microsoft.directory/permissionGrantPolicies/standard/read | Read standard properties of permission grant policies |
+> | microsoft.directory/permissionGrantPolicies/basic/update | Update basic properties of permission grant policies |
+> | microsoft.directory/permissionGrantPolicies/create | Create permission grant policies |
+> | microsoft.directory/permissionGrantPolicies/delete | Delete permission grant policies |
+
+## Next steps
+
+- [Create a custom role in Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/custom-create)
+- [List Microsoft Entra role assignments](https://learn.microsoft.com/en-us/entra/identity/role-based-access-control/view-assignments)

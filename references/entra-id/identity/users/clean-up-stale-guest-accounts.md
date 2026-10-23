@@ -1,0 +1,178 @@
+# Monitor and clean up stale guest accounts
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/users/clean-up-stale-guest-accounts  
+> Microsoft doc last updated: 12/30/2024
+
+
+## Overview
+
+As users collaborate with external partners, it’s possible that many guest accounts get created in Microsoft Entra tenants over time. When collaboration ends and the users no longer access your tenant, the guest accounts might become stale. Administrators can monitor guest accounts at scale using inactive guest insights. Administrators can also use Access Reviews to automatically review inactive guest users, block them from signing in, and delete them from the directory.
+
+Learn more about [how to manage inactive user accounts in Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-manage-inactive-user-accounts).
+
+There are a few recommended patterns that are effective at monitoring and cleaning up stale guest accounts:
+
+1. Monitor guest accounts at scale with intelligent insights into inactive guests in your organization using inactive guest report. Customize the inactivity threshold depending on your organization’s needs, narrow down the scope of guest users you want to monitor and identify the guest users that might be inactive.
+
+2. Create a multi-stage review whereby guests self-attest whether they still need access. A second-stage reviewer assesses results and makes a final decision. Guests with denied access are disabled and later deleted.
+
+3. Create a review to remove inactive external guests. Admins define inactive as period of days. They disable and later delete guests that don’t sign in to the tenant within that time frame. By default, this doesn't affect recently created users. [Learn more about how to identify inactive accounts](https://learn.microsoft.com/en-us/entra/identity/monitoring-health/howto-manage-inactive-user-accounts#how-to-detect-inactive-user-accounts).
+
+Use the following instructions to learn how to enhance monitoring of inactive guest accounts at scale and create Access Reviews that follow these patterns. Consider the configuration recommendations and then make the needed changes that suit your environment.
+
+### License requirements
+Using this feature requires Microsoft Entra ID Governance or Microsoft Entra Suite licenses. To find the right license for your requirements, see [Microsoft Entra ID Governance licensing fundamentals](https://learn.microsoft.com/en-us/entra/id-governance/licensing-fundamentals).
+
+## Monitor guest accounts at scale with inactive guest insights
+
+1. Sign in to the [Microsoft Entra admin center](https://entra.microsoft.com).
+1. Browse to **ID Governance** > **Dashboard**.
+1. Access the inactive guest account report by navigating to the **Guest access governance** card then select **View inactive guests**.
+1. The inactive guest report provides insights about inactive guest users based on 90 days of inactivity. The threshold is set to 90 days by default, but you can configure it by using **Edit inactivity threshold** based on your organization's needs.
+1. The following insights are provided as part of this report:
+
+    - Guest account overview (total guests and inactive guests with further categorization of guests who have never signed in or signed in at least once)
+    - Guest inactivity distribution (Percentage distribution of guest users based on days since last sign in)
+    - Guest inactivity overview (Guest inactivity guidance to configure inactivity threshold)
+    - Guest accounts summary (An exportable tabular view with details of all guest accounts with insights into their activity state. The Activity state could be active or inactive based on the configured inactivity threshold)
+
+1. The inactive days are calculated based on last sign in date if the user has signed in at least once. For users who have never signed in, the inactive days are calculated based on creation date.
+
+> [!NOTE]
+> The report with guest insights can be downloaded by using **Download all data**. Each action to download might take some time depending on the count of guest users and enables the download for up to 1 Million guest users.
+
+## Create a multi-stage review for guests to self-attest continued access
+
+1. Create a [dynamic group](https://learn.microsoft.com/en-us/entra/identity/users/groups-create-rule) for the guest users you want to review. For example,
+
+    `(user.userType -eq "Guest") and (user.mail -contains "@contoso.com") and (user.accountEnabled -eq true)`
+
+1. To [create an Access Review](https://learn.microsoft.com/en-us/entra/id-governance/create-access-review) for the dynamic group, navigate to **Microsoft Entra ID > Identity Governance > Access Reviews**.
+
+1. Select **New access review**.
+
+1. Configure Review type.
+
+    | Property | Value |
+    |:-----|:-------|
+    | Select what to review | **Teams + Groups**|
+    |Review scope | **Select Teams + groups** |
+    |Group| Select the dynamic group |
+    |Scope| **Guest users only**|
+    |(Optional) Review inactive guests | Check the box for **Inactive users (on tenant level) only**.<br> Enter the number of days that constitute inactivity.|
+
+    
+
+1. Select **Next: Reviews**.
+
+1. Configure Reviews:
+
+    |Property | Value |
+    |:------------|:-------------|
+    | **First stage review** |     |
+    | Multi-stage review| Check the box|
+    |Select reviewers | **Users review their own access**|
+    | Stage duration (in days) | Enter the number of days |
+    |**Second stage review** |            |
+    | Select reviewers | **Group owner(s)** or **Selected user(s) or group(s)**|
+    |Stage duration (in days) |  Enter the number of days.<br>(Optional) Specify a fallback reviewer.|
+    | **Specify recurrence of review** |    |
+    | Review recurrence | Select your preference from the drop-down|
+    |Start date| Select a date|
+    |End| Select your preference |
+    | **Specify reviewees to go to the next stage** | | 
+    | Reviewees going to the next stage | Select reviewees. For example, select users who self-approved or responded **Don't know**.
+
+    
+
+1. Select **Next: Settings**.
+
+1. Configure Settings:
+
+    | Property | Value |
+    |:--------|:-------|
+    | **Upon completion settings**| |
+    |Auto apply results to resource| Check the box|
+    |If reviewers don't respond | **Remove access** |
+    | Action to apply on denied guest users | **Block user from signing in for 30 days, then remove user from the tenant**|
+    | (Optional) At end of review, send notification to | Specify other users or groups to notify.|
+    | **Enable reviewer decision helpers** |  |
+    | Additional content for reviewer email | Add a custom message for reviewers |
+    | All other fields| Leave the default values for the remaining options. |
+
+    
+
+1. Select **Next: Review + Create**.
+
+1. Enter an Access Review name. (Optional) Provide a description.
+
+1. Select **Create**.
+
+## Create a review to remove inactive external guests
+
+1. Create a [dynamic group](https://learn.microsoft.com/en-us/entra/identity/users/groups-create-rule) for the guest users you want to review. For example,
+
+    `(user.userType -eq "Guest") and (user.mail -contains "@contoso.com") and (user.accountEnabled -eq true)`
+
+1. To [create an access review](https://learn.microsoft.com/en-us/entra/id-governance/create-access-review) for the dynamic group, navigate to **Microsoft Entra ID > Identity Governance > Access Reviews**.
+
+1. Select **New access review**.
+
+1. Configure Review type:
+
+    |Property | Value |
+    |:---------|:------------|
+    | Select what to review | **Teams + Groups** |
+    | Review scope | **Select Teams + groups** |
+    | Group | Select the dynamic group |
+    | Scope | **Guest users only**
+    | Inactive users (on tenant level) only | Check the box |
+    | Days inactive | Enter the number of days that constitutes inactivity |
+
+    > [!NOTE]
+    > The inactivity time you configure doesn't affect recently created users. The access review checks if the user has been created in the timeframe you configure and ignores users who haven't existed for at least that amount of time. For example, if you set the inactivity time as 90 days and a guest user was created/invited less than 90 days ago, the guest user isn't in scope of the access review. This ensures that guests can sign in once before being removed.
+
+    
+
+1. Select **Next: Reviews**.
+
+1. Configure Reviews:
+
+    | Property | Value |
+    |:----|:---|
+    | **Specify reviewers** |  |
+    | Select reviewers | Select **Group owner(s)** or a user or group.<br>(Optional) To enable the process to remain automated, select a reviewer who will take no action.|  
+    | **Specify recurrence of review**| | 
+    | Duration (in days) | Enter or select a value based on your preference|
+    | Review recurrence | Select your preference from the drop-down |
+    | Start date | Select a date |
+    | End | Choose an option |
+
+1. Select **Next: Settings**.
+
+    
+
+1. Configure Settings:
+
+    | Property | Value |
+    | :----| :-----|
+    | **Upon completion settings** | |
+    | Auto apply results to resource | Check the box |
+    | If reviews don't respond | **Remove access** |
+    | Action to apply on denied guest users | **Block user from signing in for 30 days, then remove user from the tenant**  |
+    | **Enable reviewer decision helpers** | |
+    | No sign-in within 30 days | Check the box |
+    | All other fields | Check/uncheck the boxes based on your preference. |
+
+    
+
+1. Select **Next: Review + Create**.
+
+1. Enter an Access Review name. (Optional) Provide a description.
+
+1. Select **Create**.
+
+Guest users who don't sign into the tenant for the number of days you configured are disabled for 30 days, then deleted. After deletion, you can restore guests for up to 30 days, after which a new invitation is needed.
+
+> [!NOTE]
+> If the access review decisions aren't yet applied, the API [accessReviewInstance: stopApplyDecisions](https://learn.microsoft.com/en-us/graph/api/accessreviewinstance-stopapplydecisions) can be used to stop active applying decisions.

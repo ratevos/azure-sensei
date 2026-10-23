@@ -1,0 +1,170 @@
+# Validate an OIDC app for Microsoft Entra App Gallery onboarding
+
+> Source: https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/validate-oidc-multitenant-app-gallery  
+> Microsoft doc last updated: 10/19/2026
+
+
+Before publishing your OpenID Connect (OIDC) application to the Microsoft Entra app gallery, you must validate that your sign-in implementation meets gallery requirements. Validation is a self-service step that produces a validation report and generates a Test ID required for submission.
+
+The Microsoft Entra App Validator supports both single-tenant and multitenant OIDC applications. It evaluates your sign-in flow against Microsoft Entra app gallery requirements while you sign in to your application.
+
+After validation, you'll have:
+
+- A validation report highlighting required and recommended fixes
+- A Test ID required to publish your app to the Microsoft Entra app gallery
+
+The [Microsoft Entra App Gallery SSO requirements](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/app-gallery-sso-requirements) define publication eligibility. Cloud SaaS applications must use a multitenant application. Single-tenant applications are acceptable when you deploy a separate application instance for each customer by using an infrastructure as a service (IaaS) or platform as a service (PaaS) architecture. Passing single-tenant validation doesn't automatically establish eligibility for App Gallery publication.
+
+## Prerequisites
+
+Before starting validation, ensure the following are already true:
+
+- Your app has a [single-tenant or multitenant application registration](https://learn.microsoft.com/en-us/entra/identity-platform/single-and-multi-tenant-apps) in Microsoft Entra ID that matches its architecture and the [App Gallery eligibility requirements](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/app-gallery-sso-requirements).
+- [OIDC sign-in](https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc) is implemented and working correctly.
+- Your app is deployed and accessible via a public URL.
+- Redirect URIs, scopes, and permissions are configured.
+- You can successfully sign in with a Microsoft account.
+- You're signed out of any existing sessions in your application.
+- A gallery submission ID, create your gallery submission first (see below). This will be required before you submit your validation results.
+
+> [!IMPORTANT]
+> Validation fails if these prerequisites aren't met. Complete and test your OIDC implementation before attempting validation.
+
+## Microsoft identity platform v1 endpoints aren't supported
+
+Self-service Microsoft Entra App Gallery onboarding supports applications that use Microsoft identity platform v2 OpenID Connect (OIDC) endpoints.
+
+Applications that use Microsoft identity platform v1 endpoints can't be validated through the self-service onboarding experience. Microsoft recommends migrating to v2 endpoints to take advantage of self-service validation, publishing, and lifecycle management capabilities.
+
+The v2 endpoint uses a scope-based authorization model, including standard OIDC scopes such as `openid`, `profile`, and `email`, and provides a consistent authorization and token model that can be validated through the self-service experience. It also supports capabilities such as incremental consent, allowing applications to request delegated permissions as needed.
+
+Microsoft identity platform v1.0 and v2.0 ID tokens differ in the claims and token semantics they expose. For more information, see [ID token claims reference](https://learn.microsoft.com/en-us/entra/identity-platform/id-token-claims-reference).
+
+> [!NOTE]
+> Applications configured to use Microsoft identity platform v1 endpoints can't be validated through the self-service onboarding experience. Migrate to v2 endpoints before starting validation.
+
+## Your gallery submission ID
+
+Before you start validation, create your Microsoft Entra gallery submission and copy its Submission ID. You will need this ID to submit your validation results.
+
+To find your submission ID:
+
+1. In the Microsoft Entra admin center, start the process to publish your application to the Microsoft Entra gallery.
+1. Select **Publish your application**. If you already have a draft submission, select **Your published applications** instead.
+
+   
+
+1. Go to the **Integration type** step.
+
+   
+
+1. Copy the value shown under **Your Submission ID**.
+
+Your submission ID is a GUID. Keep this ID available while you run the validator.
+
+When the validator asks for a submission ID:
+
+1. If the submission belongs to the tenant you're signed in to, select it from **Pick one of your submissions**.
+1. If the submission belongs to a different tenant, paste the submission ID into the field instead.
+
+If no submissions appear in the list, you can still paste the ID manually.
+
+> [!IMPORTANT]
+> You can't submit validation results without a valid gallery submission ID.
+
+## Install the Microsoft Entra App Validator browser extension
+
+The Microsoft Entra App Validator browser extension is required to perform validation.
+
+1. Open **Microsoft Edge**.
+1. Go to [Get Entra App Validator](https://microsoftedge.microsoft.com/addons/detail/entra-app-validator/iglkgnbeekgcnlapikofffkhkoldbaoj).
+1. Select **Get** to begin installation.
+1. When prompted, select **Add extension**.
+1. Verify that **Entra App Validator** appears in the Extensions list and is enabled.
+
+## Start a new validation session
+
+Start a validation session by signing in to the extension and confirming your application's sign-in page as the starting point.
+
+1. Open a new browser tab and go to your application's sign-in page. This should be the same page customers use when signing in through Microsoft Entra ID.
+1. If you're already signed in, sign out completely to ensure a clean validation session.
+1. Select the **Entra App Validator** extension icon from the browser toolbar.
+1. Sign in to the extension using your Microsoft account.
+1. Select **Start test**.
+1. When prompted, confirm the starting page and select **Yes, Start test**.
+1. When the validator prompts you to select the OIDC tenant configuration, choose the configuration that matches the application architecture you intend to publish in the App Gallery:
+    - **Multitenant**: For a cloud SaaS application that uses a shared application registration to serve customers across multiple Microsoft Entra tenants.
+    - **Single-tenant**: For an application deployed as a separate instance for each customer using an IaaS or PaaS architecture.
+
+The extension initializes the validation session and lists the checks it performs.
+
+## Run the OIDC authentication flow
+
+Sign in with a Microsoft account so the validator can capture and evaluate your application's OIDC authentication flow.
+
+1. The validator checks that your app exposes a **Sign in with Microsoft** entry point. This is required for OIDC-based gallery apps.
+1. When prompted, select **Authenticate**.
+1. Complete the Microsoft sign-in process using your Microsoft account.
+
+During authentication, the validator evaluates:
+
+- Microsoft sign-in entry point configuration
+- Tenant endpoint usage for the selected configuration: `/common` or `/organizations` for multitenant validation, or the tenant-specific OIDC configuration for single-tenant validation.
+- OIDC v2.0 endpoint compliance
+- Required scopes, including `openid` and `profile`
+- Authorization request structure and parameters
+
+> [!TIP]
+> Common validation failures include endpoints that don't match the selected tenant configuration, missing required scopes, and mismatched redirect URIs. A tenant-specific endpoint isn't a validation failure when you select **Single-tenant**. Both configurations must use Microsoft identity platform v2.0 endpoints. Resolve validation failures before publishing.
+
+## Review the validation report
+
+After authentication completes:
+
+1. In the Microsoft Entra App Validator extension, select **Preview report**.
+1. Review the following sections:
+   - **Tests executed** – Validation checks that ran
+   - **Tests passed** – Requirements your app met
+   - **Issues identified** – Blocking and nonblocking issues
+   - **Authentication data captured** – Details from the OIDC flow
+   - **Recommendations** – Guidance for resolving issues
+
+If the report shows blocking issues, resolve them in your app and rerun validation until all required checks pass.
+
+> [!IMPORTANT]
+> Blocking issues must be resolved before publishing. Nonblocking issues are recommendations and don't prevent submission.
+
+## Declare how your app identifies users
+
+Before you can submit, the validator asks which identifier from the token your application uses to match the signed-in user to a user record in its own system. Select all identifier types that your application uses, such as object ID (oid), User Principal Name (UPN), email address, employee ID, on-premises SAM account name, or a named custom claim.
+
+## Why this is asked
+
+Matching a user only on a mutable, self-assertable value, such as an email address, can create an account takeover risk. If an attacker obtains an email address that was previously associated with another user and the application relies only on that email address for account matching, the attacker could be matched to the existing application account.
+To reduce this risk, the validator does not accept a mutable identifier by itself. If your application uses a mutable identifier, select it together with an immutable identifier that your application also uses to identify the user.
+
+If you select Custom claim, you must provide the name of the claim. A named custom claim is sufficient on its own, and no additional identifier is required.
+
+## Submit validation and obtain a Test ID
+
+Once your application passes all required validation checks:
+
+1. In the validation report, select **Submit**.
+1. A unique **Test ID** is generated as proof of successful validation.
+1. Save the Test ID. You need it during the gallery publishing process.
+
+Test IDs are time-bound and expire after two weeks.
+
+> [!IMPORTANT]
+> Without a valid Test ID, you can't proceed with Microsoft Entra app gallery publishing.
+
+With validation complete and a Test ID generated, you're ready to proceed with publishing your app to the Microsoft Entra app gallery. If validation fails, review the report, resolve blocking issues, and rerun validation before continuing.
+
+## Next step
+
+> [Publish your app to Microsoft Entra App Gallery](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/publish-app-gallery)
+
+## Related content
+
+- [Security best practices for application registration](https://learn.microsoft.com/en-us/security/zero-trust/develop/app-registration)
+- [Create a security plan for external access to resources](https://learn.microsoft.com/en-us/entra/architecture/3-secure-access-plan)
