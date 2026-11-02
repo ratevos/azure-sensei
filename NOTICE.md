@@ -8,13 +8,15 @@ The files in `references/` are derived from Microsoft documentation published in
 
 | Source repository | Used for | Documentation license | Code samples |
 |---|---|---|---|
-| [MicrosoftDocs/entra-docs](https://github.com/MicrosoftDocs/entra-docs) | Entra ID, Conditional Access | MIT, Copyright (c) Microsoft Corporation (`licenses/MIT-entra-docs.txt`) | MIT |
+| [MicrosoftDocs/entra-docs](https://github.com/MicrosoftDocs/entra-docs) | Entra ID, Conditional Access, tenant restrictions, Global Secure Access | MIT, Copyright (c) Microsoft Corporation (`licenses/MIT-entra-docs.txt`) | MIT |
 | [MicrosoftDocs/azure-aks-docs](https://github.com/MicrosoftDocs/azure-aks-docs) | AKS | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) | MIT |
 | [MicrosoftDocs/azure-docs](https://github.com/MicrosoftDocs/azure-docs) | Resource Manager, Azure RBAC, Azure Policy, management groups | CC BY 4.0 | MIT |
 | [MicrosoftDocs/azure-docs-cli](https://github.com/MicrosoftDocs/azure-docs-cli) | Azure CLI reference | CC BY 4.0 | MIT |
 | [MicrosoftDocs/office-docs-powershell](https://github.com/MicrosoftDocs/office-docs-powershell) | Exchange Online and Security & Compliance PowerShell | CC BY 4.0 | MIT |
 | [MicrosoftDocs/microsoft-365-docs](https://github.com/MicrosoftDocs/microsoft-365-docs) | Microsoft 365 admin center | CC BY 4.0 | MIT |
 | [microsoftgraph/microsoft-graph-docs-contrib](https://github.com/microsoftgraph/microsoft-graph-docs-contrib) | Microsoft Graph API and permissions | CC BY 4.0 | MIT |
+
+The files in `references/purview/dlp/` and `references/purview/device-onboarding/` have no public source repository. They were fetched from the Markdown source that learn.microsoft.com serves for each page (`scripts/fetch_learn.py`) and modified the same way. Use of that content is governed by the [Microsoft Learn terms of use](https://learn.microsoft.com/en-us/legal/termsofuse); each file links its source page.
 
 Full license texts: `licenses/CC-BY-4.0.txt`, `licenses/MIT-entra-docs.txt`, `licenses/MIT-code-samples.txt`.
 

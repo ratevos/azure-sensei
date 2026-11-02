@@ -1,0 +1,8 @@
+# Learn pages with no public source repo, fetched by fetch_learn.py.
+# Format: product | subfolder | toc.json URL or single page URL | regex on page name (TOC lines only)
+# Output: references/<product>/<subfolder>/<page>.md, merged into references/<product>/INDEX.md
+
+# Purview Data Loss Prevention: concepts, endpoint DLP, browser extensions, network data security
+purview | dlp               | https://learn.microsoft.com/en-us/purview/toc.json | ^(dlp-|endpoint-dlp-)
+# Purview device onboarding (Windows and macOS) — prerequisite for endpoint DLP
+purview | device-onboarding | https://learn.microsoft.com/en-us/purview/toc.json | ^device-onboarding-
