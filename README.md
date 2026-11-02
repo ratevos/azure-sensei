@@ -71,6 +71,12 @@ Or as a project skill, shared with your team through the repository:
 git clone https://github.com/ratevos/azure-sensei.git .claude/skills/azure-sensei
 ```
 
+**On Windows**, some reference paths exceed the 260-character path limit and a plain clone silently skips them. Clone with long paths enabled:
+
+```bash
+git clone -c core.longpaths=true https://github.com/ratevos/azure-sensei.git ~/.claude/skills/azure-sensei
+```
+
 Start `claude` and ask *"What skills are available?"*, or type `/` to see it in the menu. Claude uses it automatically when a request matches, or you can call it directly with `/azure-sensei`.
 
 **How it behaves in Claude Code:** it does read-only discovery freely, but shows exactly what it will change, and in which tenant, and waits for your explicit yes before modifying anything. It uses report-only, simulation and `-WhatIf` modes where they exist. Use a test tenant when you can.
@@ -88,7 +94,10 @@ cd ~/.claude/skills/azure-sensei/scripts
 ./fetch_sources.sh                          # sparse-clones the official docs repos into /tmp/src
 python3 build_refs.py ../references         # converts docs into reference files and indexes
 python3 build_permissions.py ../references  # regenerates the permissions lookup tables
+python3 fetch_learn.py ../references        # Learn-only docsets (Purview DLP); run after build_refs.py
 ```
+
+`fetch_learn.py` covers docs whose source repo isn't public. It reads `learn_pages.txt` and asks learn.microsoft.com for each page's Markdown source. Add a line there to pull in another docset (for example Intune or Sentinel). On Windows, run these from Git Bash; `fetch_sources.sh` disables Git Bash's path conversion and enables long paths itself.
 
 Set `MS_DOCS_SRC` to clone somewhere other than `/tmp/src`. The `references/intune`, `defender-xdr` and `sentinel` folders are for documentation you add yourself and aren't touched by the rebuild, so back them up first if you've filled them in.
 
@@ -99,7 +108,7 @@ SKILL.md          Instructions Claude follows: routing, verification, guide form
 PERMISSIONS.md    Permissions workflow across Entra, Graph, Azure RBAC, Exchange, Purview, AKS
 references/       Converted Microsoft docs, one folder per product, each with an INDEX.md
   permissions/    Generated lookup tables (roles, Graph scopes, Azure roles)
-scripts/          fetch_sources.sh, build_refs.py, build_permissions.py
+scripts/          fetch_sources.sh, build_refs.py, build_permissions.py, fetch_learn.py + learn_pages.txt
 evals/            Test prompts used to check the skill's behaviour
 ```
 

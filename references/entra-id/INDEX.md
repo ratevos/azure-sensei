@@ -1,6 +1,6 @@
 # entra-id reference index
 
-1081 documents. Search this file (grep) for keywords, then open the matching path.
+1083 documents. Search this file (grep) for keywords, then open the matching path.
 
 
 ## cli
@@ -37,6 +37,11 @@
 ## cli/identity
 
 - `cli/identity/federated-credential.md` — **az identity federated-credential** — Manage federated identity credentials under user assigned identities.
+
+## external-id
+
+- `external-id/tenant-restrictions-migration.md` — **Plan a Tenant Restrictions v1 Migration to Tenant Restrictions v2** — Learn about tenant-level restrictions and controls for users, groups, and applications, along with policy management in a cloud-based portal.
+- `external-id/tenant-restrictions-v2.md` — **Configure Tenant Restrictions - Microsoft Entra ID** — Use tenant restrictions to control the types of external accounts that users can use on your networks and the devices that you manage.
 
 ## fundamentals
 

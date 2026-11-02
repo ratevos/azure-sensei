@@ -35,7 +35,7 @@ def inline_includes(body, path, depth=0, to_url=None):
         cands = []
         if ref.startswith("~/"):
             # "~" is the docset root; try the repo root and its usual docset folders
-            repo = path[len(SRC) + 1:].split("/")[0]
+            repo = path[len(SRC) + 1:].replace(os.sep, "/").split("/")[0]
             for root in ("", "docs", "articles", "microsoft-365"):
                 cands.append(os.path.normpath(os.path.join(SRC, repo, root, ref[2:])))
         else:
@@ -43,13 +43,13 @@ def inline_includes(body, path, depth=0, to_url=None):
         target = next((c for c in cands if os.path.isfile(c)), None)
         if depth > 2 or not target:
             UNRESOLVED[ref.split("/")[1] if ref.startswith("~/") else "relative"] += 1
-            if not ref.startswith("~/"): MISSING_REL[os.path.relpath(cands[0], SRC).split("/includes/")[0]] += 1
+            if not ref.startswith("~/"): MISSING_REL[os.path.relpath(cands[0], SRC).replace(os.sep, "/").split("/includes/")[0]] += 1
             return ""
         _, inc = split_fm(open(target, encoding="utf-8", errors="ignore").read())
         inc = inline_includes(inc, target, depth + 1, to_url)
         if to_url:
             # Links in an include are relative to the include file, not the article using it.
-            repo_rel = os.path.relpath(target, SRC).split("/", 1)[1]
+            repo_rel = os.path.relpath(target, SRC).replace(os.sep, "/").split("/", 1)[1]  # "/" also on Windows
             def relink(lm):
                 href = lm.group(2)
                 h, _, frag = href.partition("#")
@@ -244,6 +244,10 @@ if __name__ == "__main__":
                 "docs/identity/enterprise-apps", "docs/identity/role-based-access-control",
                 "docs/identity/monitoring-health", "docs/identity/users", "docs/fundamentals"]:
         conceptual("entra-docs", sub, "entra-id", E, "docs/")
+    # Tenant restrictions v2 (company-only Microsoft 365 / Azure DevOps sign-in; the sparse fetch limits it to these pages)
+    conceptual("entra-docs", "docs/external-id", "entra-id", E, "docs/")
+    # Global Secure Access: universal tenant restrictions, web/network content filtering, inline Purview DLP
+    conceptual("entra-docs", "docs/global-secure-access", "global-secure-access", E, "docs/")
     conceptual("azure-aks-docs", "articles/aks", "aks", f"{LEARN}/azure/aks", "articles/aks/")
     for sub in ["articles/azure-resource-manager/management", "articles/role-based-access-control",
                 "articles/governance/policy", "articles/governance/management-groups"]:

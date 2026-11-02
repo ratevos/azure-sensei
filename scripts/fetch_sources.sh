@@ -2,6 +2,9 @@
 # Sparse-clone the official Microsoft docs repos used by build_refs.py.
 # Usage: MS_DOCS_SRC=/tmp/src ./fetch_sources.sh && python3 build_refs.py <skill>/references
 set -euo pipefail
+# Git Bash on Windows rewrites "/docs/..." arguments into Windows paths, which silently
+# empties the sparse checkout; turn that off. Long paths: some doc paths exceed MAX_PATH.
+export MSYS_NO_PATHCONV=1 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.longpaths GIT_CONFIG_VALUE_0=true
 SRC="${MS_DOCS_SRC:-/tmp/src}"; mkdir -p "$SRC"; cd "$SRC"
 sparse() { local url=$1 dir=$2; shift 2; rm -rf "$dir"
   git clone -q --depth 1 --filter=blob:none --sparse "$url" "$dir"
@@ -10,7 +13,8 @@ G=https://github.com/MicrosoftDocs
 sparse $G/entra-docs entra-docs /docs/identity/conditional-access/ /docs/identity/authentication/ \
   /docs/id-governance/privileged-identity-management/ '/docs/id-governance/*.md' /docs/id-protection/ /docs/identity/hybrid/ \
   /docs/identity/enterprise-apps/ /docs/identity/role-based-access-control/ /docs/identity/monitoring-health/ \
-  /docs/identity/users/ '/docs/fundamentals/*.md' /docs/includes/
+  /docs/identity/users/ '/docs/fundamentals/*.md' /docs/includes/ \
+  /docs/global-secure-access/ '/docs/external-id/tenant-restrictions*.md'
 sparse $G/office-docs-powershell office-docs-powershell /exchange/docs-conceptual/ /exchange/exchange-ps/ExchangePowerShell/
 sparse $G/azure-aks-docs azure-aks-docs /articles/aks/ /includes/
 sparse $G/azure-docs azure-docs /articles/azure-resource-manager/management/ /articles/role-based-access-control/ \
